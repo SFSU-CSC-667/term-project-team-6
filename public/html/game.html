@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Battleship</title>
+        <link rel="stylesheet" type="text/css" href="../stylesheets/game.css">
+    </head>
+
+    <body>
+        <div id="boards">
+            <div id="player_board"></div>
+
+            <div id="opponent_board"></div>
+        </div>
+        <div id="pieces">
+            <div class="ship" id="carrier" style="height:60px;width:300px;" onclick="flipShip(event)" draggable="true" ondragend="dragStop(event)" ondragstart="dragStart(event)">
+            </div>
+
+            <div class="ship" id="battleship" style="height:60px;width:240px;" onclick="flipShip(event)" draggable="true" ondragend="dragStop(event)" ondragstart="dragStart(event)">
+            </div>
+
+            <div class="ship" id="destroyer" style="height:60px;width:180px;" onclick="flipShip(event)" draggable="true" ondragend="dragStop(event)" ondragstart="dragStart(event)">
+            </div>
+
+            <div class="ship" id="submarine" style="height:60px;width:180px;" onclick="flipShip(event)" draggable="true" ondragend="dragStop(event)" ondragstart="dragStart(event)">
+            </div>
+
+            <div class="ship" id="patrol" style="height:60px;width:120px;" onclick="flipShip(event)" draggable="true" ondragend="dragStop(event)" ondragstart="dragStart(event)">
+            </div>
+        </div>
+        <script type="text/javascript" src="../javascripts/battleship.js"></script>
+    </body>
+</html>
