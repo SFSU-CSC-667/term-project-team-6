@@ -1,0 +1,65 @@
+extends layout
+
+block head
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/stylesheets/game.css')
+    //Latest compiled and minified CSS
+    link(rel="stylesheet",  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
+                            integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u",
+                            crossorigin="anonymous")
+
+block body
+    div#login-page(class="page")
+        h1= title
+        p Welcome to #{title} page
+
+        h2 Login to battleship
+        form(class = "login", action="/login", method="POST", id='login-form')
+            input(id="username", name="username", type="text")
+            br
+            input(id="password", name="password", type="password")
+            br
+            input(type="submit", value="Submit", name="submit", id="login-submit")
+        br
+        br
+
+        h2 Register for battleship
+        form(class = "register", action="/register", method="POST")
+            input(id="username-reg", name="username", type="text")
+            br
+            input(id="password-reg", name="password", type="password")
+            br
+            input(type="submit", value="Submit", name="submit")
+
+    div#lobby(hidden=true, class="page")
+
+        div(class="container")
+            div(class="row")
+                div(class="col-md-4")
+                    h2 Lobby
+                div(class="col-md-8")
+                    button(id='createGame', class="btn btn-primary") CREATE GAME
+            div(class="row")
+                div(class="col-md-4")
+                    div(class="well")
+                        h3 Online users
+                        ul(id='connections' class="list-group")
+                div(class="col-md-8")
+                    ul(id='messages')
+                    form(id='chat-form')
+                        div(class="form-group")
+                            label Enter Message
+                            input(id='m', class="form-control", autocomplete=off)
+                            button(class="btn btn-primary") Send
+
+    div#game(hidden=true, class="page")
+        h2 battleship game
+        div(id='boards')
+            div(id='player_board')
+            div(id='opponent_board')
+
+        div(id='pieces')
+            each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
+                div(class="ship", id=val, style="height:40px")
+
+        button(id="submitBoard") Submit Board

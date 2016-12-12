@@ -1,0 +1,19 @@
+extends layout
+
+block head
+    link(rel='stylesheet', href='/stylesheets/game.css')
+block body
+    div(id='boards')
+        div(id='player_board')
+        div(id='opponent_board')
+
+    div(id='pieces')
+        each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
+            div(class="ship", id=val, style="height:40px" onclick="flipShip(event)",
+                draggable="true", ondragend="dragStop(event)", ondragstart="dragStart(event)")
+
+    //form(action="onSubmitBoard")
+    button(onClick="onSubmitBoard") Submit Board
+    if action
+        p= battleship.drawBoard("p", 0)
+        p= battleship.drawBoard("o", 450)

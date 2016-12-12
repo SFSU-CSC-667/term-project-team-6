@@ -3,7 +3,7 @@ const router = express.Router();
 
 /* GET connections listing. */
 router.get('/', function(req, res, next) {
-    res.render("chat", { title : "Chat page", action: "draw"});
+    res.render("game2", { title : "Game page"});
 });
 
 module.exports = router;
