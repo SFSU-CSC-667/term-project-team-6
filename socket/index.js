@@ -43,7 +43,10 @@ const init = (app, server) => {
             updateUsers();
         });
 
-        socket.on(events.MESSAGE_SEND, data => io.emit(events.MESSAGE_SEND, data));
+        socket.on(events.MESSAGE_SEND, data => {
+            console.log(data);
+            io.emit(events.MESSAGE_SEND, data)
+        });
 
 
         socket.on(events.CREATE_GAME, hostCreateNewGame);

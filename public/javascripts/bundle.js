@@ -299,7 +299,10 @@ var Chat = function () {
         key: "bindEvents",
         value: function bindEvents() {
 
-            $('form#chat-form').submit(this.onMessageSubmit);
+            $('form#chat-form').submit(function (event) {
+                event.preventDefault();
+                thisChat.onMessageSubmit();
+            });
         }
     }, {
         key: "onMessageSend",

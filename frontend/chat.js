@@ -34,7 +34,10 @@ class Chat {
 
     bindEvents() {
 
-        $('form#chat-form').submit(this.onMessageSubmit);
+        $('form#chat-form').submit(function (event) {
+            event.preventDefault();
+            thisChat.onMessageSubmit();
+        });
     }
 
     onMessageSend(msg) {
@@ -71,7 +74,7 @@ class Chat {
             .attr("id", user.id)
             .text('Join Game');
 
-        if ($('#connections .btn-join #' + user.id).length==0) {
+        if ($('#connections .btn-join #' + user.id).length == 0) {
             $('#connections li#' + user.id).append(joinButton);
             joinButton.on('click', function () {
                 thisChat.onJoinGame(data.gameId);

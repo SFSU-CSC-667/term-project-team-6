@@ -27,8 +27,6 @@ $(document).ready(() => {
                 $('.page').hide();
                 $('#lobby').show();
 
-
-
             })
             .fail(function (error) {
                 console.log("error", error)
