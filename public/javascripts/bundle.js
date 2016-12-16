@@ -17,12 +17,14 @@ var Battleship = function () {
 
         this.player_gameboard = document.getElementById("player_board");
         this.opponent_gameboard = document.getElementById("opponent_board");
-        this.player_gameboard.addEventListener("drop", this.placeShip, false);
+        // this.player_gameboard.addEventListener("drop", this.placeShip, false);
         this.opponent_gameboard.addEventListener("click", this.fire, false);
 
         this.testBoard = [[0, 0, 0, 1, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 1, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
 
         this.testPlayerBoard = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+
+        this.placedShips = {};
 
         thisBattleship = this;
     }
@@ -132,21 +134,27 @@ var Battleship = function () {
         }
     }, {
         key: "placeShip",
-        value: function placeShip(pos_id, leftOffset, ship_height, ship_width) {
+        value: function placeShip(pos_id, leftOffset, shipHeight, shipWidth) {
             pos_id = pos_id.toString();
             var row = parseInt(pos_id.substring(1, 2));
             var column = parseInt(pos_id.substring(2, 3)) - leftOffset;
 
+            var ship = [];
+
             var i = void 0;
-            if (ship_height > ship_width) {
-                for (i = 0; i < ship_height; i++) {
+            if (shipHeight > shipWidth) {
+                for (i = 0; i < shipHeight; i++) {
                     this.testPlayerBoard[row + i][column] = 1;
+                    ship.push({ row: row + i, column: column });
                 }
             } else {
-                for (i = 0; i < ship_width; i++) {
+                for (i = 0; i < shipWidth; i++) {
                     this.testPlayerBoard[row][column + i] = 1;
+                    ship.push({ row: row, column: column + i });
                 }
             }
+
+            this.placedShips[this.currentShipId] = ship;
         }
     }, {
         key: "removeShip",
@@ -191,6 +199,8 @@ var Battleship = function () {
             var leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
             event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
             event.target.style.opacity = "0.4";
+
+            thisBattleship.currentShipId = event.target.id;
         }
     }, {
         key: "dragStop",
@@ -237,7 +247,7 @@ var Battleship = function () {
     }, {
         key: "getBoard",
         get: function get() {
-            return this.player_gameboard;
+            return JSON.stringify(this.placedShips);
         }
     }]);
 
@@ -291,7 +301,7 @@ var Chat = function () {
         key: "onPlayerJoinedGame",
         value: function onPlayerJoinedGame(data) {
             if (data.user.id === thisChat.user.user.id) {
-                thisChat.user.startGame();
+                thisChat.user.startGame(data.gameId);
             }
             console.log("logged to game: ", data);
         }
@@ -342,7 +352,7 @@ var Chat = function () {
             }
 
             if (this.id === data.mySocketId) {
-                thisChat.user.startGame();
+                thisChat.user.startGame(data.gameId);
             }
         }
     }, {
@@ -431,8 +441,7 @@ $(document).ready(function () {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {}, 'json').done(function (result) {
             clientIO = io();
-            user = new userClass.User(result.user, bs);
-
+            user = new userClass.User(result.user, bs, clientIO);
             chat = new chatClass.Chat(user, clientIO);
 
             $('.page').hide();
@@ -449,50 +458,70 @@ $(document).ready(function () {
     });
 
     $('#submitBoard').click(function () {
-        if (user !== undefined) user.submitBoard(bs.getBoard());
+        if (user !== undefined) user.submitBoard();
     });
 });
 
 },{"./battleship":1,"./chat":2,"./constants/events":3,"./user":5}],5:[function(require,module,exports){
-"use strict";
+'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _events = require('./constants/events');
+
+var events = _interopRequireWildcard(_events);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var thisUser = void 0;
+var clientIO = io();
+
 var User = function () {
-    function User(jsonUser, battleship) {
+    function User(jsonUser, battleship, socket) {
         _classCallCheck(this, User);
 
         this.user = jsonUser;
         this.battleship = battleship;
+        // this.sock = socket;
+        thisUser = this;
+
+        this.bindSocketEvents();
     }
 
-    // get user(){
-    //     return this._user;
-    // }
-
-
-    // get socket(){
-    //     return this._socket;
-    // }
-
     _createClass(User, [{
-        key: "submitBoard",
-        value: function submitBoard(board, gameId) {
-            $.ajax({
-                type: "POST",
-                url: "/submit/board",
-                data: { board: board, user: this, game_id: gameId },
-                success: function success(_success) {
-                    console.log("Submit board succeed: ", _success);
-                },
-                dataType: json
+        key: 'bindSocketEvents',
+        value: function bindSocketEvents() {}
+        // this.clientIO.on(events.MESSAGE_SEND, thisChat.onMessageSend);
+        // this.clientIO.on(events.GET_USERS, thisChat.onGetUsers);
+        // this.clientIO.on(events.CREATE_GAME, thisChat.onGameCreated);
+        // this.clientIO.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
+
+
+        // get user(){
+        //     return this._user;
+        // }
+
+
+        // get socket(){
+        //     return this._socket;
+        // }
+
+    }, {
+        key: 'submitBoard',
+        value: function submitBoard() {
+            $.post('/submit/board', { board: thisUser.battleship.getBoard,
+                user: JSON.stringify(thisUser.user),
+                game_id: thisUser.userGameId }, function () {}, 'json').done(function (result) {
+                console.log("success", result);
+            }).fail(function (error) {
+                console.log("error", error);
             });
         }
     }, {
-        key: "startGame",
-        value: function startGame() {
+        key: 'startGame',
+        value: function startGame(gameId) {
             $('.page').hide();
             $('#game').show();
 
@@ -500,6 +529,10 @@ var User = function () {
             this.battleship.bindDragEvents($pieces);
             this.battleship.drawBord("p", 0);
             this.battleship.drawBord("o", 450);
+
+            if (gameId != undefined) {
+                thisUser.userGameId = gameId;
+            }
         }
     }]);
 
@@ -508,4 +541,4 @@ var User = function () {
 
 module.exports = { User: User };
 
-},{}]},{},[4]);
+},{"./constants/events":3}]},{},[4]);

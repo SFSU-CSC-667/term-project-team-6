@@ -27,7 +27,7 @@ class Chat {
 
     onPlayerJoinedGame(data) {
         if (data.user.id === thisChat.user.user.id) {
-            thisChat.user.startGame();
+            thisChat.user.startGame(data.gameId);
         }
         console.log("logged to game: ", data);
     }
@@ -82,7 +82,7 @@ class Chat {
         }
 
         if (this.id === data.mySocketId) {
-            thisChat.user.startGame();
+            thisChat.user.startGame(data.gameId);
         }
     }
 

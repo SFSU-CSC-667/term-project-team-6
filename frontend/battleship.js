@@ -9,7 +9,7 @@ class Battleship {
 
         this.player_gameboard = document.getElementById("player_board");
         this.opponent_gameboard = document.getElementById("opponent_board");
-        this.player_gameboard.addEventListener("drop", this.placeShip, false);
+        // this.player_gameboard.addEventListener("drop", this.placeShip, false);
         this.opponent_gameboard.addEventListener("click", this.fire, false);
 
         this.testBoard = [
@@ -38,11 +38,13 @@ class Battleship {
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ];
 
+        this.placedShips = {};
+
         thisBattleship = this;
     }
 
     get getBoard() {
-        return this.player_gameboard
+        return JSON.stringify(this.placedShips)
     }
 
     //initialize boards
@@ -130,19 +132,27 @@ class Battleship {
         this.redrawBoard();
     };
 
-    placeShip(pos_id, leftOffset, ship_height, ship_width) {
+    placeShip(pos_id, leftOffset, shipHeight, shipWidth) {
         pos_id = pos_id.toString();
         const row = parseInt(pos_id.substring(1, 2));
         const column = parseInt(pos_id.substring(2, 3)) - leftOffset;
 
+        let ship = [];
+
         let i;
-        if (ship_height > ship_width) {
-            for (i = 0; i < ship_height; i++)
+        if (shipHeight > shipWidth) {
+            for (i = 0; i < shipHeight; i++){
                 this.testPlayerBoard[row + i][column] = 1;
+                ship.push({row:row+i, column:column});
+            }
         } else {
-            for (i = 0; i < ship_width; i++)
+            for (i = 0; i < shipWidth; i++){
                 this.testPlayerBoard[row][column + i] = 1;
+                ship.push({row:row, column:column+i});
+            }
         }
+
+        this.placedShips[this.currentShipId] = ship
     };
 
     removeShip(previous_pos_id, ship_height, ship_width) {
@@ -181,6 +191,8 @@ class Battleship {
         const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
         event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
         event.target.style.opacity = "0.4";
+
+        thisBattleship.currentShipId = event.target.id;
     };
 
     dragStop(event) {

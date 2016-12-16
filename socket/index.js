@@ -1,7 +1,8 @@
 const socketIo = require('socket.io');
 const events = require('../frontend/constants/events');
 let io, socket;
-const db = require('../bin/db/db');
+const db = require('../bin/db/db').battleshipDB;
+
 
 const connections = [];
 const users = {};
@@ -64,24 +65,37 @@ const init = (app, server) => {
 module.exports = {init};
 
 function hostCreateNewGame() {
-    const thisGameId = ( Math.random() * 100000 ) | 0;
+
+    const user = users[this.id];
+    console.log("user is creating game!", user);
+    db.one("insert into game(player1_id) values($1) returning id", [user.id])
+        .then(function (data) {
+            // console.log(data.id); // print new game id;
+            console.log("creating game: " + data.id);
+
+            // Return the Room ID (gameId) and the socket ID (mySocketId) to the browser client
+            io.emit(events.CREATE_GAME, {
+                gameId: data.id,
+                mySocketId: socket.id,
+                userCreatedGame: user
+            });
+
+            socket.join(data.id.toString());
+            // socket.join("room");
+            console.log("user %s created game: %s", user.username, data.id)
+
+        })
+        .catch(function (error) {
+            console.log("ERROR:", error.message || error); // print error;
+        });
+
+    // const thisGameId = ( Math.random() * 100000 ) | 0;
     // Create a unique Socket.IO Room
-    console.log("creating game: " + thisGameId);
 
-    // Return the Room ID (gameId) and the socket ID (mySocketId) to the browser client
-    io.emit(events.CREATE_GAME, {
-        gameId: thisGameId,
-        mySocketId: this.id,
-        userCreatedGame: users[this.id]
-    });
-
-    socket.join(thisGameId.toString());
-    // socket.join("room");
-    console.log("user %s created game: %s", users[this.id].username,thisGameId)
 };
 
 function playerJoinGame(data) {
-    console.log('Player ' + data.user.username + 'attempting to join game: ' + data.gameId );
+    console.log('Player ' + data.user.username + 'attempting to join game: ' + data.gameId);
 
     var room = socket.rooms[data.gameId.toString()];
     // var room = socket.rooms["room"];

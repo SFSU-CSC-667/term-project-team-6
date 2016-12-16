@@ -20,8 +20,7 @@ $(document).ready(() => {
         $.post('/login', $('form#login-form').serialize(), function (){}, 'json')
             .done(function (result) {
                 clientIO = io();
-                user = new userClass.User(result.user, bs);
-
+                user = new userClass.User(result.user, bs, clientIO);
                 chat = new chatClass.Chat(user, clientIO);
 
                 $('.page').hide();
@@ -41,6 +40,6 @@ $(document).ready(() => {
 
     $('#submitBoard').click(function () {
         if (user!== undefined)
-            user.submitBoard(bs.getBoard(), )
+            user.submitBoard()
     })
 });
