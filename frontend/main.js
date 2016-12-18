@@ -8,23 +8,40 @@ import * as userClass from './user'
 import * as events from './constants/events'
 
 // console.log(LOBBY)
+let user;
+let chat;
+const bs = new battleship.Battleship();
+let clientIO;
+
+function onOpponentBoardSubmit(boardData) {
+    if (boardData.user.id != user.user.id){
+        bs.setOpponentBoard(boardData.board);
+    }
+}
+function bindSocketEvents() {
+    clientIO.on(events.GET_OPPONENT_BOARD, onOpponentBoardSubmit);
+}
 
 $(document).ready(() => {
-    let user;
-    let chat;
-    const bs = new battleship.Battleship();
-    let clientIO;
+
+    function populateHeader(user) {
+        $('#header').show();
+        $('#header #user').html("Welcome " + user.username);
+    }
 
     $('input#login-submit').click(function (event) {
         event.preventDefault();
-        $.post('/login', $('form#login-form').serialize(), function (){}, 'json')
+        $.post('/login', $('form#login-form').serialize(), function () {
+        }, 'json')
             .done(function (result) {
                 clientIO = io();
+                bindSocketEvents();
                 user = new userClass.User(result.user, bs, clientIO);
                 chat = new chatClass.Chat(user, clientIO);
 
                 $('.page').hide();
                 $('#lobby').show();
+                populateHeader(user.user);
 
             })
             .fail(function (error) {
@@ -35,11 +52,14 @@ $(document).ready(() => {
 
     $('button#createGame').click(function (event) {
         "use strict";
-        clientIO.emit(events.CREATE_GAME);
+        clientIO.emit(events.CREATE_GAME, {user: user.user});
     });
 
     $('#submitBoard').click(function () {
-        if (user!== undefined)
-            user.submitBoard()
+        if (user !== undefined) {
+            clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
+
+        }
+        // user.submitBoard()
     })
 });

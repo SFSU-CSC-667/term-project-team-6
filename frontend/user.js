@@ -1,19 +1,19 @@
 import * as events from "./constants/events"
 
 let thisUser;
-const clientIO = io();
+let socket;
 
 class User {
 
-    constructor(jsonUser, battleship, socket) {
+    constructor(jsonUser, battleship, socketIO) {
         this.user = jsonUser;
         this.battleship = battleship;
-        // this.sock = socket;
+        socket = socketIO;
         thisUser = this;
 
-        this.bindSocketEvents()   
+        this.bindSocketEvents()
     }
-    
+
     bindSocketEvents() {
         // this.clientIO.on(events.MESSAGE_SEND, thisChat.onMessageSend);
         // this.clientIO.on(events.GET_USERS, thisChat.onGetUsers);
@@ -21,28 +21,12 @@ class User {
         // this.clientIO.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
     }
 
-    // get user(){
-    //     return this._user;
-    // }
-
-
-    // get socket(){
-    //     return this._socket;
-    // }
-
-    submitBoard() {
-        $.post('/submit/board',
-                {   board: thisUser.battleship.getBoard,
-                    user: JSON.stringify(thisUser.user),
-                    game_id: thisUser.userGameId},
-                function (){},
-                'json')
-            .done(function (result) {
-                console.log("success", result)
-            })
-            .fail(function (error) {
-                console.log("error", error)
-            });
+    getBoardData() {
+        return {
+            board: thisUser.battleship.getBoard,
+            user: thisUser.user,
+            game_id: thisUser.userGameId
+        };
     }
 
     startGame(gameId) {
@@ -52,11 +36,20 @@ class User {
         const $pieces = $('.ship');
         this.battleship.bindDragEvents($pieces);
         this.battleship.drawBord("p", 0);
-        this.battleship.drawBord("o", 450);
+        this.battleship.drawBord("o", 10);
+        this.battleship.addFireListener(thisUser.onFireEvent);
 
-        if (gameId != undefined){
+        if (gameId != undefined) {
             thisUser.userGameId = gameId;
         }
+    }
+
+    onFireEvent(fireEvent) {
+        socket.emit(events.ON_NEXT_MOVE, {
+            game_id: thisUser.userGameId,
+            user: thisUser.user,
+            fire_event:fireEvent
+        });
     }
 
 }

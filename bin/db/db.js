@@ -28,7 +28,7 @@ else{
     dbConnectionString = "postgres://postgres:@localhost:5432/battleship";
 }
 
-console.log(dbConnectionString);
+// console.log(dbConnectionString);
 
 const battleshipDB = pgp(dbConnectionString);
 

@@ -9,6 +9,11 @@ block head
                             crossorigin="anonymous")
 
 block body
+    div#header(class="header page-header row", hidden=true)
+        h2
+            div#user(class="pull-left col-lg-6 text-primary")
+        h2
+            div#opponent(class="pull-right col-lg-6 text-danger", hidden=true)
     div#login-page(class="page")
         h1= title
         p Welcome to #{title} page
@@ -32,7 +37,6 @@ block body
             input(type="submit", value="Submit", name="submit")
 
     div#lobby(hidden=true, class="page")
-
         div(class="container")
             div(class="row")
                 div(class="col-md-4")
@@ -53,13 +57,14 @@ block body
                             button(class="btn btn-primary") Send
 
     div#game(hidden=true, class="page")
-        h2 battleship game
-        div(id='boards')
-            div(id='player_board')
-            div(id='opponent_board')
+        //h2 battleship game
+        div#game-area(hidden=true)
+            div(id='boards')
+                div(id='player_board')
+                div(id='opponent_board')
+            div(id='pieces')
+                each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
+                    div(class="ship", id=val, style="height:40px")
+            button(id="submitBoard") Submit Board
+        div#wait-opponent(class="loader") Waiting other player to join game
 
-        div(id='pieces')
-            each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
-                div(class="ship", id=val, style="height:40px")
-
-        button(id="submitBoard") Submit Board
