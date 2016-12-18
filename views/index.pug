@@ -11,7 +11,13 @@ block head
                             crossorigin="anonymous")
 
 block body
-    div#login-page( hidden=true, class="page login-page")
+    div#header( class="header page-header row", hidden=true)
+        h2
+            div#user(class="pull-left col-lg-6 text-primary")
+        h2
+            div#opponent(class="pull-right col-lg-6 text-danger", hidden=true)
+
+    div#login-page( class="page login-page")
         div( class="col-md-4 full-height")
             div( class="login vertical-center")
                 ul(class="nav nav-tabs")
@@ -42,7 +48,6 @@ block body
                             input(type="submit", value="Submit", name="submit", class="login-button")
 
     div#lobby( hidden=true, class="page")
-
         div(class="container full-height")
             div(class="row full-height")
                 div(class="col-md-2")
@@ -118,14 +123,14 @@ block body
                         br
                         p Battleship was one of the earliest games to be produced as a computer game, with a version being released for the Z80 Compucolor in 1979. Many computer editions of the game have been produced since. In Clubhouse Games for the Nintendo DS, Battleship is known as Grid Attack. It is played on an 8×8 grid, and includes slight variations, such as 4-player gameplay, various ship sizes and shapes, as well as the option to make the ships touch each other.
 
-    div#game( class="page")
+    div#game( hidden=true, class="page")
         h2 battleship game
-        div(id='boards')
-            div(id='player_board')
-            div(id='opponent_board')
-
-        div(id='pieces')
-            each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
-                div(class="ship", id=val, style="height:40px")
-
-        button(id="submitBoard") Submit Board
+        div#game-area(hidden=true)
+            div(id='boards')
+                div(id='player_board')
+                div(id='opponent_board')
+            div(id='pieces')
+                each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
+                    div(class="ship", id=val, style="height:40px")
+            button(id="submitBoard") Submit Board
+        div#wait-opponent(class="loader") Waiting other player to join game

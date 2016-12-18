@@ -9,44 +9,57 @@ class Battleship {
 
         this.player_gameboard = document.getElementById("player_board");
         this.opponent_gameboard = document.getElementById("opponent_board");
-        this.player_gameboard.addEventListener("drop", this.placeShip, false);
-        this.opponent_gameboard.addEventListener("click", this.fire, false);
+        // this.player_gameboard.addEventListener("drop", this.placeShip, false);
+        // this.opponent_gameboard.addEventListener("click", this.fire, false);
 
-        this.testBoard = [
-            [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        ];
+        this.opponentBoard = this.initBoard(10);
+        // this.opponentBoard = [
+        //     [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        //     [1, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        //     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        //     [1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        //     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        // ];
 
-        this.testPlayerBoard = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        ];
+        this.playerBoard = this.initBoard(10);
+        // this.playerBoard = [
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        // ];
+
+
+        this.placedShips = {};
 
         thisBattleship = this;
     }
 
+    initBoard(dim) {
+        const matrix = [];
+        for (let i = 0; i < dim; i++) {
+            matrix.push(new Array(dim).fill(0));
+        }
+        return matrix;
+    }
+
     get getBoard() {
-        return this.player_gameboard
+        return this.placedShips;
     }
 
     //initialize boards
-    drawBord(id = "p", left_offset = 450) {
+    drawBord(id = "p", left_offset = 10) {
         let i, j;
         for (i = 0; i < this.rows; i++) {
             for (j = 0; j < this.columns; j++) {
@@ -54,16 +67,24 @@ class Battleship {
                 const left_position = left_offset + j * this.square_size;
 
                 const player_square = document.createElement("div");
-                this.player_gameboard.appendChild(player_square);
 
                 player_square.id = id + i + j;
                 const thisObj = this;
-                player_square.addEventListener("dragover", function (event) {
-                    thisObj.allowDrop(event)
-                });
-                player_square.addEventListener("drop", function (event) {
-                    thisObj.onDrop(event)
-                });
+                if (id == "p") {
+                    this.player_gameboard.appendChild(player_square);
+                    player_square.addEventListener("dragover", function (event) {
+                        thisObj.allowDrop(event)
+                    });
+                    player_square.addEventListener("drop", function (event) {
+                        thisObj.onDrop(event)
+                    });
+                }
+                else {
+                    this.opponent_gameboard.appendChild(player_square);
+                    player_square.addEventListener("click", function (event) {
+                        thisObj.fire(event)
+                    });
+                }
 
                 player_square.style.top = top_position + "px";
                 player_square.style.left = left_position + "px";
@@ -71,31 +92,38 @@ class Battleship {
         }
     };
 
-
-    // drawBord("p", 0);
-    // drawBord("o", 450);
-
     fire(event) {
         const square = event.target;
         let row = square.id.substring(1, 2);
         let column = square.id.substring(2, 3);
         console.log("(" + row + "," + column + ")");
 
-        switch (this.testBoard[row][column]) {
+        const fireEvent = {row:row, column:column};
+
+        switch (this.opponentBoard[row][column]) {
             case 0: //miss
                 square.style.background = '#bbb';
-                this.testBoard[row][column] = 2;
+                this.opponentBoard[row][column] = 2;
+                fireEvent.hit = false;
                 break;
             case 1: //hit
                 square.style.background = 'red';
-                this.testBoard[row][column] = 3;
+                this.opponentBoard[row][column] = 3;
+                fireEvent.hit = true;
                 break;
             default:
                 break;
         }
 
+        if (thisBattleship.fireListener)
+            thisBattleship.fireListener(fireEvent);
+
         event.stopPropagation();
     };
+
+    addFireListener(listener){
+        thisBattleship.fireListener = listener;
+    }
 
     allowDrop(event) {
         event.preventDefault();
@@ -130,19 +158,27 @@ class Battleship {
         this.redrawBoard();
     };
 
-    placeShip(pos_id, leftOffset, ship_height, ship_width) {
+    placeShip(pos_id, leftOffset, shipHeight, shipWidth) {
         pos_id = pos_id.toString();
         const row = parseInt(pos_id.substring(1, 2));
         const column = parseInt(pos_id.substring(2, 3)) - leftOffset;
 
+        let ship = [];
+
         let i;
-        if (ship_height > ship_width) {
-            for (i = 0; i < ship_height; i++)
-                this.testPlayerBoard[row + i][column] = 1;
+        if (shipHeight > shipWidth) {
+            for (i = 0; i < shipHeight; i++) {
+                this.playerBoard[row + i][column] = 1;
+                ship.push({row: row + i, column: column});
+            }
         } else {
-            for (i = 0; i < ship_width; i++)
-                this.testPlayerBoard[row][column + i] = 1;
+            for (i = 0; i < shipWidth; i++) {
+                this.playerBoard[row][column + i] = 1;
+                ship.push({row: row, column: column + i});
+            }
         }
+
+        this.placedShips[this.currentShipId] = ship
     };
 
     removeShip(previous_pos_id, ship_height, ship_width) {
@@ -152,10 +188,10 @@ class Battleship {
         let i;
         if (ship_height > ship_width) {
             for (i = 0; i < ship_height; i++)
-                this.testPlayerBoard[row + i][column] = 0;
+                this.playerBoard[row + i][column] = 0;
         } else {
             for (i = 0; i < ship_width; i++)
-                this.testPlayerBoard[row][column + i] = 0;
+                this.playerBoard[row][column + i] = 0;
         }
     };
 
@@ -163,7 +199,7 @@ class Battleship {
         let i, j;
         for (i = 0; i < this.rows; i++) {
             for (j = 0; j < this.columns; j++) {
-                switch (this.testPlayerBoard[i][j]) {
+                switch (this.playerBoard[i][j]) {
                     case 0:
                         document.getElementById("p" + i + j).style.background = "#f6f8f9";
                         break;
@@ -181,6 +217,8 @@ class Battleship {
         const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
         event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
         event.target.style.opacity = "0.4";
+
+        thisBattleship.currentShipId = event.target.id;
     };
 
     dragStop(event) {
@@ -219,6 +257,16 @@ class Battleship {
         // $pieces.on("click", bs.flipShip());
         $pieces.on("dragend", this.dragStop);
         $pieces.on("dragstart", this.dragStart);
+    }
+
+    setOpponentBoard(boardShipPositions) {
+        console.log("setting opponent board!!");
+        for (let ship in boardShipPositions){
+            boardShipPositions[ship].forEach(function (shipPosition) {
+                thisBattleship.opponentBoard[shipPosition.row][shipPosition.column] = 1;
+            })
+        }
+        console.log("opponent board set!!");
     }
 }
 

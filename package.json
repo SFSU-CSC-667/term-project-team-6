@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "start:dev": "DEBUG=socket-io-example:* nodemon ./bin/www",
+    "start:dev": "DEBUG=battleship:* node ./bin/www",
     "build": "browserify frontend/main.js -o public/javascripts/bundle.js -t [ babelify --presets [ es2015 ] ]",
     "build:dev": "watchify frontend/main.js -o public/javascripts/bundle.js -t [ babelify --presets [ es2015 ] ] -v"
   },

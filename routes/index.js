@@ -18,33 +18,24 @@ router.post('/login', function (req, res, next) {
     const username = req.body.username;
     const pass = req.body.password;
 
-    db.one("select * from player where username=$1 and password=$2", [username, pass])
+    db.battleshipDB.one("select * from player where username=$1 and password=$2 and is_logged_in=false", [username, pass])
         .then(function (data) {
-            console.log("then", data);
-            // res.render('index', {title: 'Login', login_result: data, message: "Login successful"});
-            // res.redirect('/game?id='+data.id || data)
+            // console.log("user found: ", data);
             res.json({success: true, user: data})
         })
         .catch(function (error) {
-            console.log("Catch: "+error);
-            // res.render('index', {title: 'Login', login_result: error, message: "Login failed"});
-            res.status(403).json({title: 'Login', login_result: error, message: "Login failed", success:false});
+            console.log("Catch: " + error);
+            res.status(403).json({title: 'Login', login_result: error, message: "Login failed", success: false});
         });
 });
-
-// router.get('/login', function (req, res, next) {
-//     res.render('index', {title: 'Login'});
-// });
-
-// router.get('/register', function (req, res, next) {
-//     res.render('index', {title: 'Login'});
-// });
 
 router.post('/register', function (req, res, next) {
     const username = req.body.username;
     const pass = req.body.password;
 
-    db.one("insert into player(username, password) values($1, $2) returning id", [username, pass])
+    console.log("inserting username: "+username); // print new user id;
+
+    db.battleshipDB.one("insert into player(username, password) values($1, $2) returning id", [username, pass])
         .then(function (data) {
             console.log(data.id); // print new user id;
             res.render('index', {title: 'Login', login_result: data, message: "Registration successful"});
@@ -53,6 +44,10 @@ router.post('/register', function (req, res, next) {
             console.log("ERROR:", error.message || error); // print error;
             res.render('index', {title: 'Login', login_result: error, message: "Registration failed"});
         })
+});
+
+router.post('/submit/board', function (req, res, next) {
+
 });
 
 module.exports = router;

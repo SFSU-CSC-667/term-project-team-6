@@ -19,7 +19,18 @@ const cn = {
     password: 'postgres'
 };
 
-const battleshipDB = pgp(cn);
+let dbConnectionString;
+if (process.env.DATABASE_URL){
+    dbConnectionString = process.env.DATABASE_URL;
+    pgp.pg.defaults.ssl = true;
+}
+else{
+    dbConnectionString = "postgres://postgres:@localhost:5432/battleship";
+}
+
+// console.log(dbConnectionString);
+
+const battleshipDB = pgp(dbConnectionString);
 
 //battleshipDB.prototype.select = function (colTableObj) {
 //    battleshipDB.any('SELECT ${column~} FROM ${table~}', colTableObj)
@@ -28,4 +39,4 @@ const battleshipDB = pgp(cn);
 //    ;
 //};
 
-module.exports = battleshipDB;
+module.exports = {battleshipDB, pgp};
