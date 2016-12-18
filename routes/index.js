@@ -4,13 +4,14 @@ const router = express.Router();
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-    // let testDB = "no connection";
-    // let select = {
-    //     column: 'Column Name',
-    //         table: 'Table Name'
-    // };
-    // db.select(select, onSuccess);
-    //
+    res.render('index', {title: 'Express'});
+});
+
+router.get('/login', function (req, res, next) {
+    res.render('index', {title: 'Express'});
+});
+
+router.get('/register', function (req, res, next) {
     res.render('index', {title: 'Express'});
 });
 
