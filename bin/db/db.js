@@ -16,7 +16,7 @@ const cn = {
     port: 5432,
     database: 'battleship',
     user: 'postgres',
-    password: ''
+    password: 'postgres'
 };
 
 const battleshipDB = pgp(cn);
