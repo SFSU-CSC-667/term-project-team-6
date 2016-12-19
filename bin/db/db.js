@@ -25,7 +25,7 @@ if (process.env.DATABASE_URL){
     pgp.pg.defaults.ssl = true;
 }
 else{
-    dbConnectionString = "postgres://postgres:@localhost:5432/battleship";
+    dbConnectionString = "postgres://postgres:postgres@localhost:5432/battleship";
 }
 
 // console.log(dbConnectionString);

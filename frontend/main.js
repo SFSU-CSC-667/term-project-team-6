@@ -34,6 +34,7 @@ $(document).ready(() => {
         $.post('/login', $('form#login-form').serialize(), function () {
         }, 'json')
             .done(function (result) {
+                //TODO call method login();
                 clientIO = io();
                 bindSocketEvents();
                 user = new userClass.User(result.user, bs, clientIO);
@@ -42,12 +43,25 @@ $(document).ready(() => {
                 $('.page').hide();
                 $('#lobby').show();
                 populateHeader(user.user);
-
             })
             .fail(function (error) {
+                //TODO update UI
                 console.log("error", error)
             })
         ;
+    });
+
+    $('input#register-submit').click( function (event) {
+        event.preventDefault();
+        $.post('/register', $('form#register-form').serialize(), function () {
+
+        }, 'json')
+            .done( function(result) {
+                //TODO call method login()
+            })
+        .fail( function (error) {
+           //TODO update UI
+        });
     });
 
     $('button#createGame').click(function (event) {

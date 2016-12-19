@@ -6,6 +6,26 @@ html, body, .page {
     height: 100%;
 }
 
+.half-height {
+    height: 50%;
+}
+
+.height-70 {
+    height: 70%;
+}
+
+.height-80 {
+    height: 80%;
+}
+
+.height-90 {
+    height: 90%;
+}
+
+.height-95 {
+    height: 95%;
+}
+
 .vertical-center {
     position: absolute;
     top: 50%;
@@ -31,15 +51,6 @@ a {
     margin: 0;
     padding: 0;
 }
-
-#messages li {
-    padding: 5px 10px;
-}
-
-#messages li:nth-child(odd) {
-    background: #eee;
-}
-
 
 /*http://www.w3schools.com/howto/howto_css_loader.asp loader*/
 .loader {
