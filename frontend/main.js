@@ -13,45 +13,73 @@ let chat;
 // const bs = new battleship.Battleship();
 let clientIO;
 
-
-function bindSocketEvents() {
-
-}
-
 $(document).ready(() => {
+
+    function populateHeader(user) {
+        $('#header').show();
+        $('#header #user').html("Welcome " + user.username);
+    }
+
+    function login( result) {
+        clientIO = io();
+        user = new userClass.User(result.user, bs, clientIO);
+        chat = new chatClass.Chat(user, clientIO);
+
+        $('.page').hide();
+        $('#lobby').show();
+        populateHeader(user.user);
+    }
+
+    $('.login-tab').click( function (event) {
+        $('#register-error').hide();
+        $('#login-error').hide();
+    });
 
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {
         }, 'json')
             .done(function (result) {
-                if (!result.success){
-                    console.log("login res ",result);
-                    return;
-                }
-                clientIO = io();
-                // bindSocketEvents();
-                user = new userClass.User(result.user);
-                chat = new chatClass.Chat(user, clientIO);
-
-                $('.page').hide();
-                $('#lobby').show();
-                populateHeader(user.user);
-
+                login( result);
             })
             .fail(function (error) {
-                console.log("error", error)
+                $('#login-error').text( "Error logging in");
+                $('#login-error').show();
+                console.log("error", error);
             })
         ;
+    });
+
+    $('input#register-submit').click( function (event) {
+        event.preventDefault();
+        $.post('/register', $('form#register-form').serialize(), function () {
+        }, 'json')
+            .done( function(result) {
+                login( result);
+            })
+            .fail( function (error) {
+                $('#register-error').text( "Error registering");
+                $('#register-error').show();
+                console.log("error", error);
+            });
     });
 
     $('button#createGame').click(function (event) {
         "use strict";
         clientIO.emit(events.CREATE_GAME, {user: user.user});
     });
-});
 
-function populateHeader(user) {
-    $('#header').show();
-    $('#header #user').html("Welcome " + user.username);
-}
+    $('#submitBoard').click(function () {
+        if( $('#pieces')[0].childNodes.length > 0) {
+            alert( "You have to place all your pieces!");
+        } else {
+            if (user !== undefined) {
+                const $ships = $('.ship');
+                $ships.unbind();
+                $('#submitBoard').hide();
+                clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
+            }
+        }
+        // user.submitBoard()
+    })
+});

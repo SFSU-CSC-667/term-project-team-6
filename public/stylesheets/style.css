@@ -6,6 +6,26 @@ html, body, .page {
     height: 100%;
 }
 
+.half-height {
+    height: 50%;
+}
+
+.height-70 {
+    height: 70%;
+}
+
+.height-80 {
+    height: 80%;
+}
+
+.height-90 {
+    height: 90%;
+}
+
+.height-95 {
+    height: 95%;
+}
+
 .vertical-center {
     position: absolute;
     top: 50%;
@@ -32,15 +52,6 @@ a {
     padding: 0;
 }
 
-#messages li {
-    padding: 5px 10px;
-}
-
-#messages li:nth-child(odd) {
-    background: #eee;
-}
-
-
 /*http://www.w3schools.com/howto/howto_css_loader.asp loader*/
 .loader {
     border: 16px solid #f3f3f3; /* Light grey */
@@ -63,4 +74,14 @@ a {
 
 .page-header {
     margin-top: 0!important;
+}
+
+#logout-button {
+    position: absolute;
+    top: 50%;
+    /*margin-top: -xpx;*/
+    padding: 5px;
+    font-size: 18px;
+    border-radius: 4px;
+    margin-top: 12px;
 }
