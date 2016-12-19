@@ -871,6 +871,7 @@ function showErrorMessage(error) {
     $('#login-error').text(error.message);
     $('#login-error').show();
     console.log("error", error);
+    alertify.notify(error.message, 'error');
 }
 $(document).ready(function () {
 
@@ -880,6 +881,10 @@ $(document).ready(function () {
     }
 
     function login(result) {
+        if (!result.success) {
+            showErrorMessage(result);
+            return;
+        }
         clientIO = io();
         user = new userClass.User(result.user);
         chat = new chatClass.Chat(user, clientIO);
@@ -897,10 +902,6 @@ $(document).ready(function () {
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {}, 'json').done(function (result) {
-            if (!result.success) {
-                showErrorMessage(result);
-                return;
-            }
             login(result);
         }).fail(function (error) {
             showErrorMessage(JSON.parse(error.responseText));

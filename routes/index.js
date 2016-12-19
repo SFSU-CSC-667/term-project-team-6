@@ -41,24 +41,27 @@ router.post('/login', function (req, res, next) {
             console.log("Catch: " + error);
             res.status(403).json({
                 title: 'Login', login_result: error,
-                message: "Login failed, user not found", success: false
+                message: "Login failed, user not found or already logged in.", success: false
             });
         });
 });
 
 router.post('/register', function (req, res, next) {
     const username = req.body.username;
-    const pass = req.body.password;
+    const pass = req.body.password[0];
+    console.log(req.body);
     bcrypt.hash(pass, saltRounds, function (err, hash) {
         console.log("inserting username: " + username); // print new user id;
 
-        db.battleshipDB.one("insert into player(username, password) values($1, $2) returning id",
+        db.battleshipDB.one("insert into player(username, password) values($1, $2) returning *",
             [username, hash])
             .then(function (data) {
                 console.log(data.id); // print new user id;
-                res.render('index', {
+                res.json({
                     title: 'Login',
-                    login_result: data, message: "Registration successful"
+                    user: data,
+                    success:true,
+                    message: "Registration successful"
                 });
                 db.battleshipDB.none("INSERT INTO high_score(user_id) VALUES ($1)", [data.id])
                     .then(function (success) {
@@ -70,8 +73,9 @@ router.post('/register', function (req, res, next) {
             })
             .catch(function (error) {
                 console.log("ERROR:", error.message || error); // print error;
-                res.render('index', {
+                res.json({
                     title: 'Login',
+                    success: false,
                     login_result: error, message: "Registration failed"
                 });
             })

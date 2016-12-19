@@ -17,6 +17,7 @@ function showErrorMessage(error) {
     $('#login-error').text(error.message);
     $('#login-error').show();
     console.log("error", error);
+    alertify.notify(error.message, 'error');
 }
 $(document).ready(() => {
 
@@ -25,7 +26,11 @@ $(document).ready(() => {
         $('#header #user').html("Welcome " + user.username);
     }
 
-    function login( result) {
+    function login(result) {
+        if (!result.success) {
+            showErrorMessage(result);
+            return;
+        }
         clientIO = io();
         user = new userClass.User(result.user);
         chat = new chatClass.Chat(user, clientIO);
@@ -35,7 +40,7 @@ $(document).ready(() => {
         populateHeader(user.user);
     }
 
-    $('.login-tab').click( function (event) {
+    $('.login-tab').click(function (event) {
         $('#register-error').hide();
         $('#login-error').hide();
     });
@@ -45,11 +50,7 @@ $(document).ready(() => {
         $.post('/login', $('form#login-form').serialize(), function () {
         }, 'json')
             .done(function (result) {
-                if (!result.success){
-                    showErrorMessage(result);
-                    return;
-                }
-                login( result);
+                login(result);
             })
             .fail(function (error) {
                 showErrorMessage(JSON.parse(error.responseText));
@@ -57,15 +58,15 @@ $(document).ready(() => {
         ;
     });
 
-    $('input#register-submit').click( function (event) {
+    $('input#register-submit').click(function (event) {
         event.preventDefault();
         $.post('/register', $('form#register-form').serialize(), function () {
         }, 'json')
-            .done( function(result) {
-                login( result);
+            .done(function (result) {
+                login(result);
             })
-            .fail( function (error) {
-                $('#register-error').text( "Error registering");
+            .fail(function (error) {
+                $('#register-error').text("Error registering");
                 $('#register-error').show();
                 console.log("error", error);
             });
