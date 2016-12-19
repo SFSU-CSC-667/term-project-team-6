@@ -121,6 +121,25 @@ class Battleship {
         event.stopPropagation();
     };
 
+    displayOpponentFire(fireEvent){
+        const row = fireEvent.row, column = fireEvent.column;
+        const square = $('#p'+row+column);
+        switch (this.playerBoard[row][column]) {
+            case 0: //miss
+                square.css("background-image", "url(../assets/miss.png)");
+                this.playerBoard[row][column] = 2;
+                // fireEvent.hit = false;
+                break;
+            case 1: //hit
+                square.css("background-image", "url(../assets/hit.png)");
+                this.playerBoard[row][column] = 3;
+                // fireEvent.hit = true;
+                break;
+            default:
+                break;
+        }
+    }
+
     addFireListener(listener){
         thisBattleship.fireListener = listener;
     }

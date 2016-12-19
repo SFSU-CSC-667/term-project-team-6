@@ -13,6 +13,11 @@ let chat;
 // const bs = new battleship.Battleship();
 let clientIO;
 
+function showErrorMessage(error) {
+    $('#login-error').text(error.message);
+    $('#login-error').show();
+    console.log("error", error);
+}
 $(document).ready(() => {
 
     function populateHeader(user) {
@@ -22,7 +27,7 @@ $(document).ready(() => {
 
     function login( result) {
         clientIO = io();
-        user = new userClass.User(result.user, bs, clientIO);
+        user = new userClass.User(result.user);
         chat = new chatClass.Chat(user, clientIO);
 
         $('.page').hide();
@@ -40,12 +45,14 @@ $(document).ready(() => {
         $.post('/login', $('form#login-form').serialize(), function () {
         }, 'json')
             .done(function (result) {
+                if (!result.success){
+                    showErrorMessage(result);
+                    return;
+                }
                 login( result);
             })
             .fail(function (error) {
-                $('#login-error').text( "Error logging in");
-                $('#login-error').show();
-                console.log("error", error);
+                showErrorMessage(JSON.parse(error.responseText));
             })
         ;
     });
@@ -68,18 +75,4 @@ $(document).ready(() => {
         "use strict";
         clientIO.emit(events.CREATE_GAME, {user: user.user});
     });
-
-    $('#submitBoard').click(function () {
-        if( $('#pieces')[0].childNodes.length > 0) {
-            alert( "You have to place all your pieces!");
-        } else {
-            if (user !== undefined) {
-                const $ships = $('.ship');
-                $ships.unbind();
-                $('#submitBoard').hide();
-                clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
-            }
-        }
-        // user.submitBoard()
-    })
 });

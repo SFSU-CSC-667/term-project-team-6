@@ -75,9 +75,9 @@ block body
                         button(id='createGame', class="btn btn-primary bottom well-button") CREATE GAME
 
     div#game( hidden=true, class="page")
-        div( class="col-md-2")
+        div( class="col-md-1")
             include navbar.pug
-        div( class="col-md-7")
+        div( class="col-md-8")
             div#game-area(hidden=true)
                 button( class="btn-success" id="submitBoard") Submit Board
                 div(id='boards')
@@ -87,9 +87,16 @@ block body
                     each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
                         img( class="ship" id=val src="assets/"+val+".png")
             // TODO make into modal
-            div#wait-opponent(class="loader") Waiting other player to join game
+            div#wait-opponent Waiting for opponent...
+                div(class="loader")
         div( class="col-md-3 height-90 chat")
-            include chat-fragment.pug
+            ul(id='game-messages' class="list-group chat-list height-95" style="width=100% !important;")
+            form(id='game-chat-form')
+                div(class="form-group")
+                    div( class="col-md-10 message-bar")
+                        input(id='game-message', class="form-control", autocomplete=off)
+                    div( class="col-md-2 message-send")
+                        button(class="btn btn-primary") Send
 
 
     include navbar-modals.pug

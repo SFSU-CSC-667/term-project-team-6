@@ -60,6 +60,13 @@ router.post('/register', function (req, res, next) {
                     title: 'Login',
                     login_result: data, message: "Registration successful"
                 });
+                db.battleshipDB.none("INSERT INTO high_score(user_id) VALUES ($1)", [data.id])
+                    .then(function (success) {
+                        console.log("successfully added to high score table", success);
+                    })
+                    .catch(function (err) {
+                        console.log("error adding to highscore table", err);
+                    })
             })
             .catch(function (error) {
                 console.log("ERROR:", error.message || error); // print error;

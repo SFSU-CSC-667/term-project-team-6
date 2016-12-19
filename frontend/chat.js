@@ -13,6 +13,7 @@ class Chat {
         this.userObj = user;
         this.userSocket = socket;
         this.$usersList = $('#connections');
+        this.$highScores = $('#highscore');
 
         this.bindEvents();
         this.bindSocketEvents();
@@ -22,8 +23,14 @@ class Chat {
 
     bindSocketEvents() {
         this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
-        this.userSocket.on(events.MESSAGE_SEND, thisChat.onMessageSend);
+        this.userSocket.on(events.MESSAGE_SEND, function (messageData) {
+            thisChat.onMessageReceived(messageData, '#messages')
+        });
+        this.userSocket.on(events.GAME_MESSAGE_SEND, function (messageData) {
+            thisChat.onMessageReceived(messageData, '#game-messages')
+        });
         this.userSocket.on(events.GET_USERS, thisChat.onGetUsers);
+        this.userSocket.on(events.GET_HIGH_SCORES, thisChat.onGetHighScores);
         this.userSocket.on(events.UPDATE_USER_SOCKET, thisChat.onUpdateUserSocket);
     }
 
@@ -59,19 +66,26 @@ class Chat {
 
         $('form#chat-form').submit(function (event) {
             event.preventDefault();
-            thisChat.onMessageSubmit();
+            thisChat.onMessageSubmit('#m', events.MESSAGE_SEND);
+        });
+
+        $('form#game-chat-form').submit(function (event) {
+            event.preventDefault();
+            thisChat.onMessageSubmit('#game-message', events.GAME_MESSAGE_SEND);
         });
     }
 
-    onMessageSend(msg) {
-        $('#messages').append($('<li>').addClass("well").text(msg));
+    onMessageReceived(msg, selector) {
+        $(selector).append($('<li>').addClass("well")
+            .text(msg.user.username + " : " + msg.message));
         console.log("message received ", msg)
     }
 
-    onMessageSubmit() {
-        this.userSocket.emit(events.MESSAGE_SEND, $('#m').val());
-        $('#m').val('');
-        console.log("message sent ", $('#m').val());
+    onMessageSubmit(selector, socketEvent) {
+        this.userSocket.emit(socketEvent,
+            {message:$(selector).val(), user:thisChat.user});
+        $(selector).val('');
+        console.log("message sent ", $(selector).val());
         return false;
     }
 
@@ -90,9 +104,9 @@ class Chat {
                     console.log(game);
                     const joinButton = thisChat.buildJoinButton(user.id);
                     joinButton.on('click', function () {
-                        const game = new gameClass.Game(game.id, thisChat.userSocket,
+                        const gameObj = new gameClass.Game(game.id, thisChat.userSocket,
                             user);
-                        game.onJoinGame(thisChat.user, thisChat.userSocket.id);
+                        gameObj.onJoinGame(thisChat.user, thisChat.userSocket.id);
                     });
                     $userNameItem.append(joinButton);
                     return true;
@@ -100,10 +114,26 @@ class Chat {
             });
             thisChat.$usersList.append($userNameItem);
         });
+    }
 
-        // this.$usersList.appendChild($userNameItems);
+    onGetHighScores(data) {
+        // let $userNameItems = "";
+        thisChat.$highScores.html("");
+        const usersList = data.usersList;
+        usersList.forEach(function (score) {
+            const highScoreItem = $('<li/>')
+                .addClass("score-list");
+            const $name = $('<div/>')
+                .addClass("score-name")
+                .html(score.username);
+            const $score = $('<div/>')
+                .addClass("score")
+                .html(score.score);
+            highScoreItem.append($name);
+            highScoreItem.append($score);
 
-
+            thisChat.$highScores.append(highScoreItem)
+        });
     }
 
 

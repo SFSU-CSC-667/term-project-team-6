@@ -79,7 +79,7 @@ var Battleship = function () {
             for (i = 0; i < this.rows; i++) {
                 var _loop = function _loop() {
                     var top_position = i * _this.square_size;
-                    var left_position = left_offset + j * _this.square_size;
+                    var left_position = j * _this.square_size;
 
                     var player_square = document.createElement("div");
 
@@ -122,13 +122,13 @@ var Battleship = function () {
             switch (this.opponentBoard[row][column]) {
                 case 0:
                     //miss
-                    square.style.background = '#bbb';
+                    square.style.backgroundImage = 'url("../assets/miss.png")';
                     this.opponentBoard[row][column] = 2;
                     fireEvent.hit = false;
                     break;
                 case 1:
                     //hit
-                    square.style.background = 'red';
+                    square.style.backgroundImage = 'url("../assets/hit.png")';
                     this.opponentBoard[row][column] = 3;
                     fireEvent.hit = true;
                     break;
@@ -139,6 +139,29 @@ var Battleship = function () {
             if (thisBattleship.fireListener) thisBattleship.fireListener(fireEvent);
 
             event.stopPropagation();
+        }
+    }, {
+        key: "displayOpponentFire",
+        value: function displayOpponentFire(fireEvent) {
+            var row = fireEvent.row,
+                column = fireEvent.column;
+            var square = $('#p' + row + column);
+            switch (this.playerBoard[row][column]) {
+                case 0:
+                    //miss
+                    square.css("background-image", "url(../assets/miss.png)");
+                    this.playerBoard[row][column] = 2;
+                    // fireEvent.hit = false;
+                    break;
+                case 1:
+                    //hit
+                    square.css("background-image", "url(../assets/hit.png)");
+                    this.playerBoard[row][column] = 3;
+                    // fireEvent.hit = true;
+                    break;
+                default:
+                    break;
+            }
         }
     }, {
         key: "addFireListener",
@@ -155,12 +178,12 @@ var Battleship = function () {
         value: function onDrop(event) {
             event.preventDefault();
             var ship = event.dataTransfer.getData("text");
-            var leftOffset = event.dataTransfer.getData("leftOffset");
+            //const leftOffset = event.dataTransfer.getData("leftOffset");
+            var leftOffset = 0;
             var previous_pos_id = document.getElementById(ship).parentNode.id;
-            console.log(previous_pos_id);
-            console.log(ship);
 
-            var ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+            //const ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+            var ship_height = $($('#' + ship)).height() / this.square_size;
             //this.ship_width = parseInt( document.getElementById(ship).style.width) / square_size;
             var ship_width = $($('#' + ship)).width() / this.square_size;
 
@@ -168,7 +191,9 @@ var Battleship = function () {
             var row = parseInt(square.id.substring(1, 2));
             var column = parseInt(square.id.substring(2, 3)) - parseInt(leftOffset);
 
-            if (column >= 0 && this.canPlace(row, ship_height, column, ship_width)) {
+            console.log({ ship: ship, leftOffset: leftOffset, previous_pos_id: previous_pos_id, ship_height: ship_height, ship_width: ship_width, square: square, row: row, column: column });
+
+            if (column >= 0 && this.canPlace(row, ship_height, column, ship_width, false)) {
                 if (previous_pos_id != "pieces") this.removeShip(previous_pos_id, ship_height, ship_width);
                 this.placeShip(square.id, leftOffset, ship_height, ship_width);
                 square.appendChild(document.getElementById(ship));
@@ -229,10 +254,10 @@ var Battleship = function () {
                 for (j = 0; j < this.columns; j++) {
                     switch (this.playerBoard[i][j]) {
                         case 0:
-                            document.getElementById("p" + i + j).style.background = "#f6f8f9";
+                            //document.getElementById("p" + i + j).style.background = "#f6f8f9";
                             break;
                         case 1:
-                            document.getElementById("p" + i + j).style.background = "#bbb";
+                            //document.getElementById("p" + i + j).style.background = "#bbb";
                             break;
                     }
                 }
@@ -243,8 +268,8 @@ var Battleship = function () {
         value: function dragStart(event, domElement) {
             event.dataTransfer = event.originalEvent.dataTransfer;
             event.dataTransfer.setData("text", event.target.id);
-            var leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
-            event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
+            //const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
+            //event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
             event.target.style.opacity = "0.4";
 
             thisBattleship.currentShipId = event.target.id;
@@ -257,37 +282,73 @@ var Battleship = function () {
     }, {
         key: "flipShip",
         value: function flipShip(event) {
-            //TODO relook at logic
-            var parent_id = document.getElementById(event.target.id).parentNode.id;
-            var width = event.target.style.width;
-            var height = width;
-            var ship_height = parseInt(event.target.style.height) / thisBattleship.square_size;
+            //console.log( event);
+            var parent_id = event.target.parentNode.id;
+            var width = event.target.width;
+            var height = event.target.height;
+            var ship_height = parseInt(height) / thisBattleship.square_size;
             var ship_width = parseInt(width) / thisBattleship.square_size;
 
+            //console.log( {width,height,ship_width,ship_height});
+
             if (parent_id == "pieces") {
-                event.target.style.width = event.target.style.width;
-                event.target.style.height = height;
-            } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width)) {
-                event.target.style.width = event.target.style.width;
-                event.target.style.height = height;
+                event.target.style.height = width + "px";
+                event.target.style.width = height + "px";
+                if (width > height) {
+                    event.target.src = "../assets/" + event.target.id + "-90.png";
+                } else {
+                    event.target.src = "../assets/" + event.target.id + ".png";
+                }
+            } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width, true)) {
+                event.target.style.width = height + "px";
+                event.target.style.height = width + "px";
+
+                if (width > height) {
+                    event.target.src = "../assets/" + event.target.id + "-90.png";
+                } else {
+                    event.target.src = "../assets/" + event.target.id + ".png";
+                }
 
                 thisBattleship.removeShip(parent_id, ship_height, ship_width);
                 thisBattleship.placeShip(parent_id, ship_width, ship_height);
                 thisBattleship.redrawBoard();
             } else {
-                alert("Connot rotate ship");
+                alert("Cannot rotate ship");
             }
         }
     }, {
         key: "canPlace",
-        value: function canPlace(row, ship_height, column, ship_width) {
-            return row + ship_height <= this.rows && column + ship_width <= this.columns;
+        value: function canPlace(row, ship_height, column, ship_width, rotated) {
+            var skip_first = rotated;
+            if (row + ship_height <= this.rows && column + ship_width <= this.columns) {
+                var i = 0;
+                for (i = row; i < row + ship_height; i++) {
+                    if (skip_first) {
+                        skip_first = false;
+                    } else {
+                        if (this.playerBoard[i][column] == 1) return false;
+                    }
+                }
+
+                skip_first = rotated;
+
+                for (i = column; i < column + ship_width; i++) {
+                    if (skip_first) {
+                        skip_first = false;
+                    } else {
+                        if (this.playerBoard[row][i] == 1) return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+            return true;
         }
     }, {
         key: "bindDragEvents",
         value: function bindDragEvents($pieces) {
             $pieces.attr("draggable", "true");
-            // $pieces.on("click", bs.flipShip());
+            $pieces.on("click", this.flipShip);
             $pieces.on("dragend", this.dragStop);
             $pieces.on("dragstart", this.dragStart);
         }
@@ -345,6 +406,7 @@ var Chat = function () {
         this.userObj = user;
         this.userSocket = socket;
         this.$usersList = $('#connections');
+        this.$highScores = $('#highscore');
 
         this.bindEvents();
         this.bindSocketEvents();
@@ -356,8 +418,14 @@ var Chat = function () {
         key: "bindSocketEvents",
         value: function bindSocketEvents() {
             this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
-            this.userSocket.on(events.MESSAGE_SEND, thisChat.onMessageSend);
+            this.userSocket.on(events.MESSAGE_SEND, function (messageData) {
+                thisChat.onMessageReceived(messageData, '#messages');
+            });
+            this.userSocket.on(events.GAME_MESSAGE_SEND, function (messageData) {
+                thisChat.onMessageReceived(messageData, '#game-messages');
+            });
             this.userSocket.on(events.GET_USERS, thisChat.onGetUsers);
+            this.userSocket.on(events.GET_HIGH_SCORES, thisChat.onGetHighScores);
             this.userSocket.on(events.UPDATE_USER_SOCKET, thisChat.onUpdateUserSocket);
         }
     }, {
@@ -394,21 +462,26 @@ var Chat = function () {
 
             $('form#chat-form').submit(function (event) {
                 event.preventDefault();
-                thisChat.onMessageSubmit();
+                thisChat.onMessageSubmit('#m', events.MESSAGE_SEND);
+            });
+
+            $('form#game-chat-form').submit(function (event) {
+                event.preventDefault();
+                thisChat.onMessageSubmit('#game-message', events.GAME_MESSAGE_SEND);
             });
         }
     }, {
-        key: "onMessageSend",
-        value: function onMessageSend(msg) {
-            $('#messages').append($('<li>').addClass("well").text(msg));
+        key: "onMessageReceived",
+        value: function onMessageReceived(msg, selector) {
+            $(selector).append($('<li>').addClass("well").text(msg.user.username + " : " + msg.message));
             console.log("message received ", msg);
         }
     }, {
         key: "onMessageSubmit",
-        value: function onMessageSubmit() {
-            this.userSocket.emit(events.MESSAGE_SEND, $('#m').val());
-            $('#m').val('');
-            console.log("message sent ", $('#m').val());
+        value: function onMessageSubmit(selector, socketEvent) {
+            this.userSocket.emit(socketEvent, { message: $(selector).val(), user: thisChat.user });
+            $(selector).val('');
+            console.log("message sent ", $(selector).val());
             return false;
         }
     }, {
@@ -424,8 +497,8 @@ var Chat = function () {
                         console.log(game);
                         var joinButton = thisChat.buildJoinButton(user.id);
                         joinButton.on('click', function () {
-                            var game = new gameClass.Game(game.id, thisChat.userSocket, user);
-                            game.onJoinGame(thisChat.user, thisChat.userSocket.id);
+                            var gameObj = new gameClass.Game(game.id, thisChat.userSocket, user);
+                            gameObj.onJoinGame(thisChat.user, thisChat.userSocket.id);
                         });
                         $userNameItem.append(joinButton);
                         return true;
@@ -433,9 +506,22 @@ var Chat = function () {
                 });
                 thisChat.$usersList.append($userNameItem);
             });
+        }
+    }, {
+        key: "onGetHighScores",
+        value: function onGetHighScores(data) {
+            // let $userNameItems = "";
+            thisChat.$highScores.html("");
+            var usersList = data.usersList;
+            usersList.forEach(function (score) {
+                var highScoreItem = $('<li/>').addClass("score-list");
+                var $name = $('<div/>').addClass("score-name").html(score.username);
+                var $score = $('<div/>').addClass("score").html(score.score);
+                highScoreItem.append($name);
+                highScoreItem.append($score);
 
-            // this.$usersList.appendChild($userNameItems);
-
+                thisChat.$highScores.append(highScoreItem);
+            });
         }
     }, {
         key: "buildJoinButton",
@@ -457,6 +543,8 @@ var USER_JOINED = 'user-joined';
 var MESSAGE_SEND = 'message-send';
 var GET_USERS = 'get-connections';
 var UPDATE_USER_SOCKET = 'user-socket';
+
+var GET_HIGH_SCORES = 'GET_HIGH_SCORES';
 
 var FIND_LEADER = 'findLeader';
 
@@ -480,14 +568,16 @@ var SUBMIT_BOARD = 'SUBMIT_BOARD';
 var GET_OPPONENT_BOARD = 'GET_OPPONENT_BOARD';
 var ON_NEXT_MOVE = 'ON_NEXT_MOVE';
 var GET_GAME_HOST = 'GET_GAME_HOST';
+var GAME_MESSAGE_SEND = 'GAME_MESSAGE_SEND';
 
 // lobby
 // const PLAYER_RESTART = 'playerRestart';
 
-module.exports = { LOBBY: LOBBY, USER_JOINED: USER_JOINED, MESSAGE_SEND: MESSAGE_SEND, FIND_LEADER: FIND_LEADER,
+module.exports = {
+    LOBBY: LOBBY, USER_JOINED: USER_JOINED, MESSAGE_SEND: MESSAGE_SEND, FIND_LEADER: FIND_LEADER,
     CREATE_GAME: CREATE_GAME, GAME_START: GAME_START, COUNTDOWN: COUNTDOWN, NEXT_MOVE: NEXT_MOVE, PLAYER_JOIN_GAME: PLAYER_JOIN_GAME, PLAYER_MOVE: PLAYER_MOVE, PLAYER_RESTART: PLAYER_RESTART,
     NEW_GAME_CREATED: NEW_GAME_CREATED, GET_USERS: GET_USERS, PLAYER_JOINED_GAME: PLAYER_JOINED_GAME, UPDATE_USER_SOCKET: UPDATE_USER_SOCKET, UPDATE_SCORE: UPDATE_SCORE, SUBMIT_BOARD: SUBMIT_BOARD,
-    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE, GET_GAME_HOST: GET_GAME_HOST, PLAYER_LEAVE_GAME: PLAYER_LEAVE_GAME
+    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE, GET_GAME_HOST: GET_GAME_HOST, PLAYER_LEAVE_GAME: PLAYER_LEAVE_GAME, GAME_MESSAGE_SEND: GAME_MESSAGE_SEND, GET_HIGH_SCORES: GET_HIGH_SCORES
 };
 
 },{}],4:[function(require,module,exports){
@@ -535,21 +625,33 @@ var Game = function () {
         this.hostUser = new userClass.User(user);
         this.isHostUser = this.hostUser.user.socket_id == socketIO.id;
 
-        $('#submitBoard').click(function () {
-            thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
-        });
+        $('#submitBoard').on("click", this.onSubmitBoard);
 
         this.$opponentScore = $('#header #opponent');
         this.$userScore = $('#header #user');
     }
 
     _createClass(Game, [{
+        key: 'onSubmitBoard',
+        value: function onSubmitBoard() {
+            if ($('#pieces')[0].childNodes.length > 0) {
+                alert("You have to place all your pieces!");
+            } else {
+                var $ships = $('.ship');
+                $ships.unbind();
+                $('#submitBoard').hide();
+                thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
+            }
+        }
+    }, {
         key: 'bindSocketEvents',
         value: function bindSocketEvents() {
 
             this.userSocket.on(events.PLAYER_JOINED_GAME, thisGame.onPlayerJoinedGame);
             this.userSocket.on(events.UPDATE_SCORE, thisGame.onUpdateScore);
             this.userSocket.on(events.GET_OPPONENT_BOARD, thisGame.onOpponentBoardSubmit);
+            this.userSocket.on(events.ON_NEXT_MOVE, thisGame.onOpponentMove);
+
             // this.userSocket.on(events.GET_GAME_HOST, thisGame.onGetGameHost);
         }
 
@@ -591,6 +693,13 @@ var Game = function () {
                 opponent: thisGame.opponentPlayer.user,
                 fire_event: fireEvent
             });
+        }
+    }, {
+        key: 'onOpponentMove',
+        value: function onOpponentMove(fireEventData) {
+            if (fireEventData.opponent.id == thisGame.player.user.id) {
+                thisGame.battleship.displayOpponentFire(fireEventData.fire_event);
+            }
         }
     }, {
         key: 'onPlayerJoinedGame',
@@ -639,6 +748,9 @@ var Game = function () {
                     if (thisGame.player.user.id == userShipsLeft.player_id) {
                         var winner = thisGame.getPlayerById(userShipsLeft.player_id);
                         console.log("You won: ", winner.user);
+                        // var notification = alertify.notify('sample', 'success', 5, function(){
+                        //     console.log('You won.'); });
+
                         thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
                             gameId: thisGame.gameID,
                             user: winner.user
@@ -646,6 +758,8 @@ var Game = function () {
                     } else {
                         var loser = thisGame.getOtherPlayerById(userShipsLeft.player_id);
                         console.log("You lost: ", loser.user);
+                        // alertify.notify('sample', 'success', 5, function(){
+                        //     console.log('You lost.'); });
                         thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
                             gameId: thisGame.gameID,
                             user: loser.user
@@ -655,7 +769,7 @@ var Game = function () {
                     $('.page').hide();
                     $('#lobby').show();
                     thisGame.populateHeader(thisGame.player.user);
-                    this.restartGameState();
+                    thisGame.restartGameState();
             }
         }
     }, {
@@ -665,6 +779,10 @@ var Game = function () {
 
             $('#game-area').hide();
             $('#wait-opponent').show();
+
+            $('#player_board').html("");
+            $('#opponent_board').html("");
+            thisGame.$opponentScore.hide();
         }
     }, {
         key: 'getPlayerById',
@@ -749,26 +867,53 @@ var chat = void 0;
 // const bs = new battleship.Battleship();
 var clientIO = void 0;
 
-function bindSocketEvents() {}
-
+function showErrorMessage(error) {
+    $('#login-error').text(error.message);
+    $('#login-error').show();
+    console.log("error", error);
+}
 $(document).ready(function () {
+
+    function populateHeader(user) {
+        $('#header').show();
+        $('#header #user').html("Welcome " + user.username);
+    }
+
+    function login(result) {
+        clientIO = io();
+        user = new userClass.User(result.user);
+        chat = new chatClass.Chat(user, clientIO);
+
+        $('.page').hide();
+        $('#lobby').show();
+        populateHeader(user.user);
+    }
+
+    $('.login-tab').click(function (event) {
+        $('#register-error').hide();
+        $('#login-error').hide();
+    });
 
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {}, 'json').done(function (result) {
             if (!result.success) {
-                console.log("login res ", result);
+                showErrorMessage(result);
                 return;
             }
-            clientIO = io();
-            // bindSocketEvents();
-            user = new userClass.User(result.user);
-            chat = new chatClass.Chat(user, clientIO);
-
-            $('.page').hide();
-            $('#lobby').show();
-            populateHeader(user.user);
+            login(result);
         }).fail(function (error) {
+            showErrorMessage(JSON.parse(error.responseText));
+        });
+    });
+
+    $('input#register-submit').click(function (event) {
+        event.preventDefault();
+        $.post('/register', $('form#register-form').serialize(), function () {}, 'json').done(function (result) {
+            login(result);
+        }).fail(function (error) {
+            $('#register-error').text("Error registering");
+            $('#register-error').show();
             console.log("error", error);
         });
     });
@@ -779,11 +924,6 @@ $(document).ready(function () {
         clientIO.emit(events.CREATE_GAME, { user: user.user });
     });
 });
-
-function populateHeader(user) {
-    $('#header').show();
-    $('#header #user').html("Welcome " + user.username);
-}
 
 },{"./chat":2,"./constants/events":3,"./user":6}],6:[function(require,module,exports){
 "use strict";
@@ -816,7 +956,7 @@ var User = function () {
     _createClass(User, [{
         key: "bindSocketEvents",
         value: function bindSocketEvents() {
-            // this.clientIO.on(events.MESSAGE_SEND, thisChat.onMessageSend);
+            // this.clientIO.on(events.MESSAGE_SEND, thisChat.onMessageReceived);
             // this.clientIO.on(events.GET_USERS, thisChat.onGetUsers);
             // this.clientIO.on(events.CREATE_GAME, thisChat.onGameCreated);
             // this.clientIO.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);

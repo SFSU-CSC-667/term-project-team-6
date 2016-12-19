@@ -22,12 +22,21 @@ class Game {
         this.isHostUser = this.hostUser.user.socket_id == socketIO.id;
 
 
-        $('#submitBoard').click(function () {
-            thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
-        });
+        $('#submitBoard').on("click", this.onSubmitBoard);
 
         this.$opponentScore = $('#header #opponent');
         this.$userScore = $('#header #user');
+    }
+
+    onSubmitBoard() {
+        if ($('#pieces')[0].childNodes.length > 0) {
+            alert("You have to place all your pieces!");
+        } else {
+            const $ships = $('.ship');
+            $ships.unbind();
+            $('#submitBoard').hide();
+            thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
+        }
     }
 
     get opponentPlayer() {
@@ -49,6 +58,8 @@ class Game {
         this.userSocket.on(events.PLAYER_JOINED_GAME, thisGame.onPlayerJoinedGame);
         this.userSocket.on(events.UPDATE_SCORE, thisGame.onUpdateScore);
         this.userSocket.on(events.GET_OPPONENT_BOARD, thisGame.onOpponentBoardSubmit);
+        this.userSocket.on(events.ON_NEXT_MOVE, thisGame.onOpponentMove);
+
         // this.userSocket.on(events.GET_GAME_HOST, thisGame.onGetGameHost);
     }
 
@@ -86,6 +97,12 @@ class Game {
             opponent: thisGame.opponentPlayer.user,
             fire_event: fireEvent
         });
+    }
+
+    onOpponentMove(fireEventData) {
+        if (fireEventData.opponent.id == thisGame.player.user.id){
+            thisGame.battleship.displayOpponentFire(fireEventData.fire_event)
+        }
     }
 
     onPlayerJoinedGame(data) {
@@ -145,6 +162,9 @@ class Game {
                 if (thisGame.player.user.id == userShipsLeft.player_id) {
                     const winner = thisGame.getPlayerById(userShipsLeft.player_id);
                     console.log("You won: ", winner.user);
+                    // var notification = alertify.notify('sample', 'success', 5, function(){
+                    //     console.log('You won.'); });
+
                     thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
                         gameId: thisGame.gameID,
                         user: winner.user
@@ -154,6 +174,8 @@ class Game {
                 else {
                     const loser = thisGame.getOtherPlayerById(userShipsLeft.player_id)
                     console.log("You lost: ", loser.user);
+                    // alertify.notify('sample', 'success', 5, function(){
+                    //     console.log('You lost.'); });
                     thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
                         gameId: thisGame.gameID,
                         user: loser.user
@@ -163,7 +185,7 @@ class Game {
                 $('.page').hide();
                 $('#lobby').show();
                 thisGame.populateHeader(thisGame.player.user);
-                this.restartGameState();
+                thisGame.restartGameState();
         }
     }
 
@@ -172,6 +194,10 @@ class Game {
 
         $('#game-area').hide();
         $('#wait-opponent').show();
+
+        $('#player_board').html("");
+        $('#opponent_board').html("");
+        thisGame.$opponentScore.hide();
     }
 
     getPlayerById(id) {

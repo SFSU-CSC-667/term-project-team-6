@@ -5,6 +5,18 @@ const db = require('../bin/db/db').battleshipDB;
 const pgp = require('../bin/db/db').pgp;
 
 
+function sendHighScoreTable() {
+    db.any('SELECT * FROM player, high_score WHERE high_score.user_id=player.id ' +
+        'ORDER BY score DESC LIMIT 10')
+        .then(function (data) {
+            console.log("success from high scores select", data.length);
+            const res = {usersList: data};
+            io.emit(events.GET_HIGH_SCORES, res);
+        })
+        .catch(function (error) {
+            console.log("error from high scores transaction", error); // printing the error;
+        });
+}
 const init = (app, server) => {
     io = socketIo(server);
 
@@ -25,14 +37,19 @@ const init = (app, server) => {
                     io.emit(events.UPDATE_USER_SOCKET, user);
                     // io.emit(events.GET_USERS, data);
                     updateUsers();
+                    sendHighScoreTable();
                 });
         });
 
         socket.on(events.MESSAGE_SEND, data => {
-            console.log(data);
+            // console.log(data);
             io.emit(events.MESSAGE_SEND, data)
         });
 
+        socket.on(events.GAME_MESSAGE_SEND, data => {
+            // console.log(data);
+            io.emit(events.GAME_MESSAGE_SEND, data)
+        });
 
         socket.on(events.CREATE_GAME, function (data) {
             playerCreateNewGame(data, socket)
@@ -41,7 +58,8 @@ const init = (app, server) => {
             onSubmitBoard(data, socket)
         });
         socket.on(events.ON_NEXT_MOVE, function (data) {
-            onNextMove(data, socket)
+            onNextMove(data, socket);
+            io.sockets.in(data.game_id.toString()).emit(events.ON_NEXT_MOVE, data);
         });
 
         socket.on(events.PLAYER_JOIN_GAME, function (data) {
@@ -115,6 +133,32 @@ function updateUsers() {
         });
 }
 
+function updateHighScores(player1ID, scoreIncrease1, player2ID, scoreIncrease2) {
+
+    db.tx(function (t) {
+        const q1 = this.any('UPDATE high_score SET score = score + $1 WHERE user_id=$2;',
+            [scoreIncrease1, player1ID]);
+        const q2 = this.any('UPDATE high_score SET score = score + $1 WHERE user_id=$2;',
+            [scoreIncrease2, player2ID]);
+        const q3 = this.any('SELECT * FROM player, high_score WHERE high_score.user_id=player.id ' +
+            'ORDER BY score DESC LIMIT 10');
+
+        // returning a promise that determines a successful transaction:
+        return this.batch([q1, q2, q3]); // all of the queries are to be resolved;
+    })
+        .then(function (data) {
+            const res = {
+                usersList: data[2]
+            };
+            io.emit(events.GET_HIGH_SCORES, res);
+            // console.log("data from transaction", res); // printing successful transaction output;
+
+        })
+        .catch(function (error) {
+            console.log("error from high scores transaction", error); // printing the error;
+        });
+}
+
 function userLeavingCleanUp(socket) {
     db.one('update player set is_logged_in=$1, socket_id=NULL where socket_id=$2 returning id',
         [false, socket.id])
@@ -169,6 +213,18 @@ function onNextMove(data, socket) {
     }
 }
 
+function updateHighScoreTable(shipsLeft, game) {
+    const scoreIncrease =
+        shipsLeft[0].player_id == game.player1_id ?
+        game.player1_score + 100 : game.player2_score + 100;
+
+    const loserPoints = shipsLeft[0].player_id == game.player1_id ?
+        game.player2_score : game.player1_score;
+    const loserId = shipsLeft[0].player_id == game.player1_id ?
+        game.player2_id : game.player1_id;
+    updateHighScores(shipsLeft[0].player_id, scoreIncrease, loserId, loserPoints);
+}
+
 function updateScore(gameID) {
     db.one('select *, p1.username as player1_username, p2.username as player2_username ' +
         'FROM game ' +
@@ -184,6 +240,10 @@ function updateScore(gameID) {
                     console.log("shipsLeft: ", shipsLeft);
                     io.sockets.in(gameID.toString()).emit(events.UPDATE_SCORE,
                         {game: game, shipsLeft: shipsLeft});
+                    if (shipsLeft.length == 1) {
+                        //    this menas that only one user has ships left => he is a winner
+                        updateHighScoreTable(shipsLeft, game);
+                    }
                 })
                 .catch(function (error) {
                     console.log("shipsLeft error: ", error);
@@ -230,11 +290,11 @@ function playerLeaveGame(data, socket) {
     const room = socket.adapter.rooms[data.gameId.toString()];
     if (room != undefined) {
         socket.leave(data.gameId.toString(), function (err) {
-            if (err!=null){
+            if (err != null) {
                 console.log("problem leaving game user(%s) ", data.user.username, err);
             }
-            console.log('Player ' + data.user.username + " left game." +  data.gameId);
-            db.any("DELETE FROM game WHERE id = $1",[data.gameId])
+            console.log('Player ' + data.user.username + " left game." + data.gameId);
+            db.any("DELETE FROM game WHERE id = $1", [data.gameId])
                 .then(function (success) {
                     updateUsers();
                 })
