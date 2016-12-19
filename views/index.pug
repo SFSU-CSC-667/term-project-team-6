@@ -16,18 +16,19 @@ block body
             div#user(class="pull-left col-lg-6 text-primary")
         h2
             div#opponent(class="pull-right col-lg-6 text-danger", hidden=true)
+        a( href=".") Logout
 
-    div#login-page( hidden=true, class="page login-page")
+    div#login-page( hidden=false, class="page login-page")
         div( class="col-md-4 full-height")
             div( class="login vertical-center")
                 ul(class="nav nav-tabs")
                     li(class="active")
-                        a( href="#login-form" data-toggle="tab") Login
+                        a( href="#login" data-toggle="tab") Login
                     li
-                        a( href="#register-form" data-toggle="tab") Register
+                        a( href="#register" data-toggle="tab") Register
 
                 div(id="myTabContent" class="tab-content")
-                    div( class="tab-pane active in")
+                    div( class="tab-pane active in" id="login")
                         form( action="/login", method="POST" id="login-form")
                             h2(class="login-title") Login to battleship
                             hr
@@ -37,17 +38,17 @@ block body
                             br
                             input(type="submit", value="Submit", name="submit", id="login-submit", class="login-button")
 
-                    div( class="tab-pane fade" id="register-form")
-                        form( action="/register", method="POST")
+                    div( class="tab-pane fade" id="register")
+                        form( action="/register", method="POST" id="register-form")
                             h2(class="login-title") Register for battleship
                             hr
                             input(id="username-reg", name="username", type="text", class="login-input", placeholder="username")
                             br
                             input(id="password-reg", name="password", type="password", class="login-input", placeholder="password")
                             br
-                            input(type="submit", value="Submit", name="submit", class="login-button")
+                            input(type="submit", value="Submit", name="submit", id="register-submit", class="login-button")
 
-    div#lobby( hidden=false, class="page")
+    div#lobby( hidden=true, class="page")
         div(class="container full-height")
             div(class="row full-height")
                 div(class="col-md-2 height-70")
@@ -57,55 +58,30 @@ block body
                        h3( class="well-header") Highscores
                        hr( class="score-hr")
                        ul(id="highscore" class="list-group height-90")
-                           li( class="score-list")
-                               div( class="score-name") name
-                               div( class="score") 100
-                           li( class="score-list")
-                               div( class="score-name") name
-                               div( class="score") 100
-                           li( class="score-list")
-                               div( class="score-name") name
-                               div( class="score") 100
-                           li( class="score-list")
-                               div( class="score-name") name
-                               div( class="score") 100
-                div(class="col-md-7 height-90" id="chat")
-                    ul(id='messages' class="list-group chat-list height-95")
-                        li( class="message-list")
-                            h4( class="message-name") user name
-                            div( class="message") message
-                        li( class="message-list")
-                            h4( class="message-name") user name
-                            div( class="message") message
-                    form(id='chat-form')
-                        div(class="form-group")
-                            div( class="col-md-10 message-bar")
-                                input(id='m', class="form-control", autocomplete=off)
-                            div( class="col-md-2 message-send")
-                                button(class="btn btn-primary") Send
+                div(class="col-md-7 height-90 chat")
+                    include chat-fragment.pug
                 div( class="col-md-3 height-90")
                     div(class="well full-height")
                         h3( class="well-header") Online users
                         ul(id='connections' class="list-group well-list height-95")
-                            li( class="list-group-item user user-list" id="1") name
-                                button( class="btn-join btn-sm btn-primary pull-right btn-center-vertical" id="2") Join Game
-                            li( class="list-group-item user user-list" id="3") name
-                                button( class="btn-join btn-sm btn-primary pull-right btn-center-vertical" id="4") Join Game
                         button(id='createGame', class="btn btn-primary bottom well-button") CREATE GAME
 
     div#game( hidden=true, class="page")
-        h2 battleship game
         div( class="col-md-2")
             include navbar.pug
-        div( class="col-md-8")
-            div#game-area(hidden=false)
+        div( class="col-md-7")
+            div#game-area(hidden=true)
+                button( class="btn-submit" id="submitBoard") Submit Board
                 div(id='boards')
                     div(id='player_board')
                     div(id='opponent_board')
                 div(id='pieces')
                     each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
-                        div(class="ship", id=val, style="height:40px")
-                button(id="submitBoard") Submit Board
+                        img( class="ship" id=val src="assets/"+val+".png")
             // TODO make into modal
-            //div Waiting other player to join game
-                //div#wait-opponent(class="loader")
+            div#wait-opponent(class="loader") Waiting other player to join game
+        div( class="col-md-3 height-90 chat")
+            include chat-fragment.pug
+
+
+    include navbar-modals.pug

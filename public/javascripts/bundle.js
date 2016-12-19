@@ -79,7 +79,7 @@ var Battleship = function () {
             for (i = 0; i < this.rows; i++) {
                 var _loop = function _loop() {
                     var top_position = i * _this.square_size;
-                    var left_position = left_offset + j * _this.square_size;
+                    var left_position = j * _this.square_size;
 
                     var player_square = document.createElement("div");
 
@@ -155,18 +155,20 @@ var Battleship = function () {
         value: function onDrop(event) {
             event.preventDefault();
             var ship = event.dataTransfer.getData("text");
-            var leftOffset = event.dataTransfer.getData("leftOffset");
+            //const leftOffset = event.dataTransfer.getData("leftOffset");
+            var leftOffset = 0;
             var previous_pos_id = document.getElementById(ship).parentNode.id;
-            console.log(previous_pos_id);
-            console.log(ship);
 
-            var ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+            //const ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+            var ship_height = $($('#' + ship)).height() / this.square_size;
             //this.ship_width = parseInt( document.getElementById(ship).style.width) / square_size;
             var ship_width = $($('#' + ship)).width() / this.square_size;
 
             var square = event.target;
             var row = parseInt(square.id.substring(1, 2));
             var column = parseInt(square.id.substring(2, 3)) - parseInt(leftOffset);
+
+            console.log({ ship: ship, leftOffset: leftOffset, previous_pos_id: previous_pos_id, ship_height: ship_height, ship_width: ship_width, square: square, row: row, column: column });
 
             if (column >= 0 && this.canPlace(row, ship_height, column, ship_width)) {
                 if (previous_pos_id != "pieces") this.removeShip(previous_pos_id, ship_height, ship_width);
@@ -229,10 +231,10 @@ var Battleship = function () {
                 for (j = 0; j < this.columns; j++) {
                     switch (this.playerBoard[i][j]) {
                         case 0:
-                            document.getElementById("p" + i + j).style.background = "#f6f8f9";
+                            //document.getElementById("p" + i + j).style.background = "#f6f8f9";
                             break;
                         case 1:
-                            document.getElementById("p" + i + j).style.background = "#bbb";
+                            //document.getElementById("p" + i + j).style.background = "#bbb";
                             break;
                     }
                 }
@@ -243,8 +245,8 @@ var Battleship = function () {
         value: function dragStart(event, domElement) {
             event.dataTransfer = event.originalEvent.dataTransfer;
             event.dataTransfer.setData("text", event.target.id);
-            var leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
-            event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
+            //const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
+            //event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
             event.target.style.opacity = "0.4";
 
             thisBattleship.currentShipId = event.target.id;
@@ -257,37 +259,62 @@ var Battleship = function () {
     }, {
         key: "flipShip",
         value: function flipShip(event) {
-            //TODO relook at logic
-            var parent_id = document.getElementById(event.target.id).parentNode.id;
-            var width = event.target.style.width;
-            var height = width;
-            var ship_height = parseInt(event.target.style.height) / thisBattleship.square_size;
+            console.log(event);
+            var parent_id = event.target.parentNode.id;
+            var width = event.target.width;
+            var height = event.target.height;
+            var ship_height = parseInt(height) / thisBattleship.square_size;
             var ship_width = parseInt(width) / thisBattleship.square_size;
 
+            console.log({ width: width, height: height, ship_width: ship_width, ship_height: ship_height });
+
             if (parent_id == "pieces") {
-                event.target.style.width = event.target.style.width;
-                event.target.style.height = height;
+                event.target.style.height = width + "px";
+                event.target.style.width = height + "px";
+                if (width > height) {
+                    event.target.src = "../assets/" + event.target.id + "-90.png";
+                } else {
+                    event.target.src = "../assets/" + event.target.id + ".png";
+                }
             } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width)) {
-                event.target.style.width = event.target.style.width;
-                event.target.style.height = height;
+                event.target.style.width = height + "px";
+                event.target.style.height = width + "px";
+
+                if (width > height) {
+                    event.target.src = "../assets/" + event.target.id + "-90.png";
+                } else {
+                    event.target.src = "../assets/" + event.target.id + ".png";
+                }
 
                 thisBattleship.removeShip(parent_id, ship_height, ship_width);
                 thisBattleship.placeShip(parent_id, ship_width, ship_height);
                 thisBattleship.redrawBoard();
             } else {
-                alert("Connot rotate ship");
+                alert("Cannot rotate ship");
             }
         }
     }, {
         key: "canPlace",
         value: function canPlace(row, ship_height, column, ship_width) {
-            return row + ship_height <= this.rows && column + ship_width <= this.columns;
+            if (row + ship_height <= this.rows && column + ship_width <= this.columns) {
+                var i = 0;
+                for (i = row; i < row + ship_height; i++) {
+                    if (this.playerBoard[i][column] == 1) return false;
+                }
+
+                for (i = column; i < column + ship_width; i++) {
+                    if (this.playerBoard[row][i] == 1) return false;
+                }
+            } else {
+                return false;
+            }
+            return true;
         }
     }, {
         key: "bindDragEvents",
         value: function bindDragEvents($pieces) {
             $pieces.attr("draggable", "true");
-            // $pieces.on("click", bs.flipShip());
+            $pieces.on("click", this.flipShip);
             $pieces.on("dragend", this.dragStop);
             $pieces.on("dragstart", this.dragStart);
         }
@@ -576,18 +603,21 @@ $(document).ready(function () {
         $('#header #user').html("Welcome " + user.username);
     }
 
+    function login(result) {
+        clientIO = io();
+        bindSocketEvents();
+        user = new userClass.User(result.user, bs, clientIO);
+        chat = new chatClass.Chat(user, clientIO);
+
+        $('.page').hide();
+        $('#lobby').show();
+        populateHeader(user.user);
+    }
+
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {}, 'json').done(function (result) {
-            //TODO call method login();
-            clientIO = io();
-            bindSocketEvents();
-            user = new userClass.User(result.user, bs, clientIO);
-            chat = new chatClass.Chat(user, clientIO);
-
-            $('.page').hide();
-            $('#lobby').show();
-            populateHeader(user.user);
+            login(result);
         }).fail(function (error) {
             //TODO update UI
             console.log("error", error);
@@ -597,7 +627,7 @@ $(document).ready(function () {
     $('input#register-submit').click(function (event) {
         event.preventDefault();
         $.post('/register', $('form#register-form').serialize(), function () {}, 'json').done(function (result) {
-            //TODO call method login()
+            login(result);
         }).fail(function (error) {
             //TODO update UI
         });

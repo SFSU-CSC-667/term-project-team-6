@@ -22,7 +22,7 @@ router.post('/login', function (req, res, next) {
     db.battleshipDB.one("select * from player where username=$1 and password=$2 and is_logged_in=false", [username, pass])
         .then(function (data) {
             // console.log("user found: ", data);
-            res.json({success: true, user: data})
+            res.json({success: true, user: data});
         })
         .catch(function (error) {
             console.log("Catch: " + error);
@@ -39,7 +39,15 @@ router.post('/register', function (req, res, next) {
     db.battleshipDB.one("insert into player(username, password) values($1, $2) returning id", [username, pass])
         .then(function (data) {
             console.log(data.id); // print new user id;
-            res.render('index', {title: 'Login', login_result: data, message: "Registration successful"});
+            db.battleshipDB.one("select * from player where username=$1 and password=$2 and is_logged_in=false", [username, pass])
+                .then( function(data) {
+                    res.json({success: true, user: data});
+                })
+                .catch( function( error) {
+                    console.log("Catch: " + error);
+                    res.status(403).json({title: 'Login', login_result: error, message: "Login failed", success: false});
+                });
+            //res.render('index', {title: 'Login', login_result: data, message: "Registration successful"});
         })
         .catch(function (error) {
             console.log("ERROR:", error.message || error); // print error;

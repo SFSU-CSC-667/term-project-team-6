@@ -64,7 +64,7 @@ class Battleship {
         for (i = 0; i < this.rows; i++) {
             for (j = 0; j < this.columns; j++) {
                 const top_position = i * this.square_size;
-                const left_position = left_offset + j * this.square_size;
+                const left_position = j * this.square_size;
 
                 const player_square = document.createElement("div");
 
@@ -132,18 +132,20 @@ class Battleship {
     onDrop(event) {
         event.preventDefault();
         const ship = event.dataTransfer.getData("text");
-        const leftOffset = event.dataTransfer.getData("leftOffset");
+        //const leftOffset = event.dataTransfer.getData("leftOffset");
+        const leftOffset = 0;
         const previous_pos_id = document.getElementById(ship).parentNode.id;
-        console.log(previous_pos_id);
-        console.log(ship);
 
-        const ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+        //const ship_height = parseInt(document.getElementById(ship).style.height) / this.square_size;
+        const ship_height = $($('#' + ship)).height() / this.square_size;
         //this.ship_width = parseInt( document.getElementById(ship).style.width) / square_size;
         const ship_width = $($('#' + ship)).width() / this.square_size;
 
         const square = event.target;
         const row = parseInt(square.id.substring(1, 2));
         let column = parseInt(square.id.substring(2, 3)) - parseInt(leftOffset);
+
+        console.log( {ship,leftOffset,previous_pos_id,ship_height,ship_width,square,row,column});
 
         if (column >= 0 && this.canPlace(row, ship_height, column, ship_width)) {
             if (previous_pos_id != "pieces")
@@ -201,10 +203,10 @@ class Battleship {
             for (j = 0; j < this.columns; j++) {
                 switch (this.playerBoard[i][j]) {
                     case 0:
-                        document.getElementById("p" + i + j).style.background = "#f6f8f9";
+                        //document.getElementById("p" + i + j).style.background = "#f6f8f9";
                         break;
                     case 1:
-                        document.getElementById("p" + i + j).style.background = "#bbb";
+                        //document.getElementById("p" + i + j).style.background = "#bbb";
                         break;
                 }
             }
@@ -214,8 +216,8 @@ class Battleship {
     dragStart(event, domElement) {
         event.dataTransfer = event.originalEvent.dataTransfer;
         event.dataTransfer.setData("text", event.target.id);
-        const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
-        event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
+        //const leftOffset = (event.pageX - event.target.offsetLeft) / thisBattleship.square_size;
+        //event.dataTransfer.setData("leftOffset", parseInt(leftOffset));
         event.target.style.opacity = "0.4";
 
         thisBattleship.currentShipId = event.target.id;
@@ -226,35 +228,60 @@ class Battleship {
     };
 
     flipShip(event) {
-        //TODO relook at logic
-        const parent_id = document.getElementById(event.target.id).parentNode.id;
-        const width = event.target.style.width;
-        const height = width;
-        const ship_height = parseInt(event.target.style.height) / thisBattleship.square_size;
-        const ship_width = parseInt(width) / thisBattleship.square_size;
+        console.log( event);
+        const parent_id = event.target.parentNode.id;
+        const width = event.target.width;
+        const height = event.target.height;
+        const ship_height = parseInt( height) / thisBattleship.square_size;
+        const ship_width = parseInt( width) / thisBattleship.square_size;
+
+        console.log( {width,height,ship_width,ship_height});
 
         if (parent_id == "pieces") {
-            event.target.style.width = event.target.style.width;
-            event.target.style.height = height;
+            event.target.style.height = width + "px";
+            event.target.style.width = height + "px";
+            if( width > height) {
+                event.target.src = "../assets/"+event.target.id+"-90.png";
+            } else {
+                event.target.src = "../assets/"+event.target.id+".png";
+            }
         } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width)) {
-            event.target.style.width = event.target.style.width;
-            event.target.style.height = height;
+            event.target.style.width = height + "px";
+            event.target.style.height = width + "px";
+
+            if( width > height) {
+                event.target.src = "../assets/"+event.target.id+"-90.png";
+            } else {
+                event.target.src = "../assets/"+event.target.id+".png";
+            }
 
             thisBattleship.removeShip(parent_id, ship_height, ship_width);
             thisBattleship.placeShip(parent_id, ship_width, ship_height);
             thisBattleship.redrawBoard();
         } else {
-            alert("Connot rotate ship");
+            alert("Cannot rotate ship");
         }
     };
 
     canPlace(row, ship_height, column, ship_width) {
-        return ((row + ship_height <= this.rows) && (column + ship_width <= this.columns));
+        if( (row + ship_height <= this.rows) && (column + ship_width <= this.columns)) {
+            let i = 0;
+            for( i = row; i < row + ship_height; i++) {
+                if( this.playerBoard[ i][ column] == 1) return false;
+            }
+
+            for( i = column; i < column + ship_width; i++) {
+                if( this.playerBoard[ row][ i] == 1) return false;
+            }
+        } else {
+            return false;
+        }
+        return true;
     }
 
     bindDragEvents($pieces) {
         $pieces.attr("draggable", "true");
-        // $pieces.on("click", bs.flipShip());
+        $pieces.on("click", this.flipShip);
         $pieces.on("dragend", this.dragStop);
         $pieces.on("dragstart", this.dragStart);
     }

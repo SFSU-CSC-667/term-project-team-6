@@ -29,20 +29,23 @@ $(document).ready(() => {
         $('#header #user').html("Welcome " + user.username);
     }
 
+    function login( result) {
+        clientIO = io();
+        bindSocketEvents();
+        user = new userClass.User(result.user, bs, clientIO);
+        chat = new chatClass.Chat(user, clientIO);
+
+        $('.page').hide();
+        $('#lobby').show();
+        populateHeader(user.user);
+    }
+
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {
         }, 'json')
             .done(function (result) {
-                //TODO call method login();
-                clientIO = io();
-                bindSocketEvents();
-                user = new userClass.User(result.user, bs, clientIO);
-                chat = new chatClass.Chat(user, clientIO);
-
-                $('.page').hide();
-                $('#lobby').show();
-                populateHeader(user.user);
+                login( result);
             })
             .fail(function (error) {
                 //TODO update UI
@@ -54,14 +57,13 @@ $(document).ready(() => {
     $('input#register-submit').click( function (event) {
         event.preventDefault();
         $.post('/register', $('form#register-form').serialize(), function () {
-
         }, 'json')
             .done( function(result) {
-                //TODO call method login()
+                login( result);
             })
-        .fail( function (error) {
-           //TODO update UI
-        });
+            .fail( function (error) {
+                //TODO update UI
+            });
     });
 
     $('button#createGame').click(function (event) {
