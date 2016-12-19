@@ -4,6 +4,94 @@ let io;
 const db = require('../bin/db/db').battleshipDB;
 const pgp = require('../bin/db/db').pgp;
 
+
+const init = (app, server) => {
+    io = socketIo(server);
+
+    app.set('io', io);
+
+    io.on('connection', socket => {
+
+        socket.on('disconnect', data => {
+            console.log("on user logging out: ", socket.id, this);
+            userLeavingCleanUp(socket);
+            updateUsers();
+        });
+
+        socket.on(events.USER_JOINED, data => {
+            db.one('update player set is_logged_in=$1, socket_id=$3 where id=$2 returning *',
+                [true, data.id, socket.id])
+                .then(function (user) {
+                    io.emit(events.UPDATE_USER_SOCKET, user);
+                    // io.emit(events.GET_USERS, data);
+                    updateUsers();
+                });
+        });
+
+        socket.on(events.MESSAGE_SEND, data => {
+            console.log(data);
+            io.emit(events.MESSAGE_SEND, data)
+        });
+
+
+        socket.on(events.CREATE_GAME, function (data) {
+            playerCreateNewGame(data, socket)
+        });
+        socket.on(events.SUBMIT_BOARD, function (data) {
+            onSubmitBoard(data, socket)
+        });
+        socket.on(events.ON_NEXT_MOVE, function (data) {
+            onNextMove(data, socket)
+        });
+
+        socket.on(events.PLAYER_JOIN_GAME, function (data) {
+            playerJoinGame(data, socket);
+        });
+
+        socket.on(events.PLAYER_LEAVE_GAME, function (data) {
+            playerLeaveGame(data, socket);
+        });
+        // socket.on(events.GET_GAME_HOST, function (data) {
+        //     getGameHost(data, socket);
+        // });
+    })
+};
+
+module.exports = {init};
+
+function playerCreateNewGame(data, socket) {
+
+    console.log("user is creating game! sid: ", socket.id);
+    db.one("insert into game(player1_id, socket_created) select id, socket_id from player " +
+        "where socket_id=$1 " +
+        "returning id, player1_id",
+        [socket.id])
+        .then(function (gameData) {
+            // console.log(data.id); // print new game id;
+            console.log("creating game: " + gameData.id);
+            // Return the Room ID (gameId) and the socket ID (mySocketId) to the browser client
+            io.emit(events.CREATE_GAME, {
+                gameId: gameData.id,
+                mySocketId: socket.id,
+                userCreatedGame: data.user
+            });
+
+            console.log("user sid %s created game: %s", socket.id, data.id, socket.rooms);
+            socket.join(gameData.id.toString(), function (err) {
+                "use strict";
+                console.log("error joining game: ", err);
+                // console.log("playerCreateNewGame Socket rooms: ", socket.rooms);
+                // console.log("playerCreateNewGame Socket adapter rooms: ", socket.adapter.rooms);
+                // console.log("playerCreateNewGame IO rooms: ", io.rooms);
+            });
+
+        })
+        .catch(function (error) {
+            console.log("ERROR:", error.message || error); // print error;
+        });
+};
+
+
 function updateUsers() {
 
     db.tx(function (t) {
@@ -45,9 +133,9 @@ function onNextMove(data, socket) {
             'where game_id=$1 ' +
             'AND position_x=$2 ' +
             'AND position_y = $3 ' +
-            'AND player_id = $4' +
+            'AND player_id = $4 ' +
             'returning *;',
-            [data.game_id, data.fire_event.row, data.fire_event.column, data.user.id])
+            [data.game_id, data.fire_event.row, data.fire_event.column, data.opponent.id])
             .then(function (boardState) {
                 // io.emit(events.UPDATE_USER_SOCKET, user);
                 db.none("UPDATE game SET " +
@@ -81,91 +169,26 @@ function onNextMove(data, socket) {
     }
 }
 
-const init = (app, server) => {
-    io = socketIo(server);
-
-    app.set('io', io);
-
-    io.on('connection', socket => {
-
-        socket.on('disconnect', data => {
-            console.log("on user logging out: ", socket.id, this);
-            userLeavingCleanUp(socket);
-            updateUsers();
-        });
-
-        socket.on(events.USER_JOINED, data => {
-            db.one('update player set is_logged_in=$1, socket_id=$3 where id=$2 returning *',
-                [true, data.id, socket.id])
-                .then(function (user) {
-                    io.emit(events.UPDATE_USER_SOCKET, user);
-                    // io.emit(events.GET_USERS, data);
-                    updateUsers();
-                });
-        });
-
-        socket.on(events.MESSAGE_SEND, data => {
-            console.log(data);
-            io.emit(events.MESSAGE_SEND, data)
-        });
-
-
-        socket.on(events.CREATE_GAME, function (data) {
-            playerCreateNewGame(data, socket)
-        });
-        socket.on(events.SUBMIT_BOARD, function (data) {
-            onSubmitBoard(data, socket)
-        });
-        socket.on(events.ON_NEXT_MOVE, function (data) {
-            onNextMove(data, socket)
-        });
-
-        // Player Events
-        socket.on(events.PLAYER_JOIN_GAME, function (data) {
-            playerJoinGame(data, socket);
-        });
-    })
-};
-
-module.exports = {init};
-
-function playerCreateNewGame(data, socket) {
-
-    console.log("user is creating game! sid: ", socket.id);
-    db.one("insert into game(player1_id, socket_created) select id, socket_id from player " +
-        "where socket_id=$1 " +
-        "returning id, player1_id",
-        [socket.id])
-        .then(function (data) {
-            // console.log(data.id); // print new game id;
-            console.log("creating game: " + data.id);
-
-            // Return the Room ID (gameId) and the socket ID (mySocketId) to the browser client
-            io.emit(events.CREATE_GAME, {
-                gameId: data.id,
-                mySocketId: socket.id,
-                userCreatedGame: data.player1_id
-            });
-
-            console.log("user sid %s created game: %s", socket.id, data.id, socket.rooms);
-            socket.join(data.id.toString(), function (err) {
-            });
-
-        })
-        .catch(function (error) {
-            console.log("ERROR:", error.message || error); // print error;
-        });
-};
-
 function updateScore(gameID) {
     db.one('select *, p1.username as player1_username, p2.username as player2_username ' +
         'FROM game ' +
         'INNER JOIN player AS p1 on p1.id=game.player1_id ' +
         'INNER JOIN player as p2 ON p2.id=game.player2_id ' +
         'WHERE game.id=$1;', [gameID])
-        .then(function (row) {
+        .then(function (game) {
             // console.log("update score success: ", row);
-            io.sockets.in(gameID.toString()).emit(events.UPDATE_SCORE, row);
+            db.any("SELECT player_id, count(player_id) " +
+                "FROM board_state WHERE game_id=$1 and board_state.hit=FALSE " +
+                "GROUP BY player_id", [gameID])
+                .then(function (shipsLeft) {
+                    console.log("shipsLeft: ", shipsLeft);
+                    io.sockets.in(gameID.toString()).emit(events.UPDATE_SCORE,
+                        {game: game, shipsLeft: shipsLeft});
+                })
+                .catch(function (error) {
+                    console.log("shipsLeft error: ", error);
+                })
+
         })
         .catch(function (error) {
             console.log("update score error: ", error);
@@ -193,6 +216,32 @@ function playerJoinGame(data, socket) {
         io.sockets.in(data.gameId.toString()).emit(events.PLAYER_JOINED_GAME, data);
         // io.sockets.in("room").emit(events.PLAYER_JOINED_GAME, data);
         console.log('Player ' + data.user.username + ' joining game: ' + data.gameId);
+
+    } else {
+        // Otherwise, send an error message back to the player.
+        io.emit('error', {message: "This room does not exist."});
+        console.log("This room does not exist. Socket rooms: ", socket.rooms);
+        console.log("This room does not exist. IO rooms: ", io.rooms);
+    }
+}
+
+function playerLeaveGame(data, socket) {
+    console.log('Player ' + data.user.username + 'attempting to leave game: ' + data.gameId);
+    const room = socket.adapter.rooms[data.gameId.toString()];
+    if (room != undefined) {
+        socket.leave(data.gameId.toString(), function (err) {
+            if (err!=null){
+                console.log("problem leaving game user(%s) ", data.user.username, err);
+            }
+            console.log('Player ' + data.user.username + " left game." +  data.gameId);
+            db.any("DELETE FROM game WHERE id = $1",[data.gameId])
+                .then(function (success) {
+                    updateUsers();
+                })
+                .catch(function (gameError) {
+                    console.log("error deliting game: ", gameError)
+                });
+        });
 
     } else {
         // Otherwise, send an error message back to the player.

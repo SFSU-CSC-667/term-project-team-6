@@ -315,16 +315,20 @@ var Battleship = function () {
 module.exports = { Battleship: Battleship };
 
 },{}],2:[function(require,module,exports){
-'use strict';
+"use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       * Created by dusan_cvetkovic on 11/1/16.
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       */
 
 
-var _events = require('./constants/events');
+var _events = require("./constants/events");
 
 var events = _interopRequireWildcard(_events);
+
+var _game = require("./game");
+
+var gameClass = _interopRequireWildcard(_game);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -341,8 +345,6 @@ var Chat = function () {
         this.userObj = user;
         this.userSocket = socket;
         this.$usersList = $('#connections');
-        this.$opponentScore = $('#header #opponent');
-        this.$userScore = $('#header #user');
 
         this.bindEvents();
         this.bindSocketEvents();
@@ -351,37 +353,34 @@ var Chat = function () {
     }
 
     _createClass(Chat, [{
-        key: 'bindSocketEvents',
+        key: "bindSocketEvents",
         value: function bindSocketEvents() {
+            this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
             this.userSocket.on(events.MESSAGE_SEND, thisChat.onMessageSend);
             this.userSocket.on(events.GET_USERS, thisChat.onGetUsers);
-            this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
-            this.userSocket.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
             this.userSocket.on(events.UPDATE_USER_SOCKET, thisChat.onUpdateUserSocket);
-            this.userSocket.on(events.UPDATE_SCORE, thisChat.onUpdateScore);
         }
     }, {
-        key: 'onUpdateScore',
-        value: function onUpdateScore(gameData) {
-            console.log(gameData);
-            if (thisChat.user.id == gameData.player1_id) {
-                thisChat.$userScore.html("User: " + gameData.player1_username + ": " + gameData.player1_score);
-                thisChat.$opponentScore.html("Opp: " + gameData.player2_username + ": " + gameData.player2_score);
-            } else {
-                thisChat.$userScore.html("User: " + gameData.player2_username + ": " + gameData.player2_score);
-                thisChat.$opponentScore.html("Opponent: " + gameData.player1_username + ": " + gameData.player1_score);
+        key: "onGameCreated",
+        value: function onGameCreated(data) {
+            var gameCreator = data.userCreatedGame;
+            var joinButton = thisChat.buildJoinButton(gameCreator.id);
+
+            var game = new gameClass.Game(data.gameId, thisChat.userSocket, gameCreator, true);
+
+            if ($('#connections .btn-join #' + gameCreator.id).length == 0) {
+                $('#connections li#' + gameCreator.id).append(joinButton);
+                joinButton.on('click', function () {
+                    game.onJoinGame(thisChat.user, thisChat.userSocket.id);
+                });
             }
 
-            if (thisChat.user.id == gameData.player1_id && gameData.player1_turn || thisChat.user.id == gameData.player2_id && !gameData.player1_turn) {
-                $('#opponent_board').removeClass('disabled-button');
-            } else {
-                $('#opponent_board').addClass('disabled-button');
+            if (this.id === data.mySocketId) {
+                game.startGame();
             }
-
-            thisChat.$opponentScore.show();
         }
     }, {
-        key: 'onUpdateUserSocket',
+        key: "onUpdateUserSocket",
         value: function onUpdateUserSocket(data) {
             console.log(data);
             if (data.id == thisChat.user.id) {
@@ -390,23 +389,7 @@ var Chat = function () {
             }
         }
     }, {
-        key: 'onPlayerJoinedGame',
-        value: function onPlayerJoinedGame(data) {
-            if (data.user.id === thisChat.user.id) {
-                thisChat.userObj.startGame(data.gameId);
-                thisChat.$userScore.html("User: " + data.user.username);
-            } else {
-                thisChat.$opponentScore.html("Opponent: " + data.user.username);
-                thisChat.$opponentScore.show();
-            }
-            console.log("logged to game: ", data);
-            $('#game-area').show();
-            $('#wait-opponent').hide();
-            // $('#wait-opponent').removeClass('loader');
-
-        }
-    }, {
-        key: 'bindEvents',
+        key: "bindEvents",
         value: function bindEvents() {
 
             $('form#chat-form').submit(function (event) {
@@ -415,13 +398,13 @@ var Chat = function () {
             });
         }
     }, {
-        key: 'onMessageSend',
+        key: "onMessageSend",
         value: function onMessageSend(msg) {
             $('#messages').append($('<li>').addClass("well").text(msg));
             console.log("message received ", msg);
         }
     }, {
-        key: 'onMessageSubmit',
+        key: "onMessageSubmit",
         value: function onMessageSubmit() {
             this.userSocket.emit(events.MESSAGE_SEND, $('#m').val());
             $('#m').val('');
@@ -429,7 +412,7 @@ var Chat = function () {
             return false;
         }
     }, {
-        key: 'onGetUsers',
+        key: "onGetUsers",
         value: function onGetUsers(data) {
             // let $userNameItems = "";
             thisChat.$usersList.html("");
@@ -438,9 +421,11 @@ var Chat = function () {
                 var $userNameItem = $('<li/>').addClass("list-group-item").addClass("user").attr("id", user.id).html(user.username);
                 data.games.some(function (game) {
                     if (user.socket_id == game.socket_created) {
+                        console.log(game);
                         var joinButton = thisChat.buildJoinButton(user.id);
                         joinButton.on('click', function () {
-                            thisChat.onJoinGame(game.id);
+                            var game = new gameClass.Game(game.id, thisChat.userSocket, user);
+                            game.onJoinGame(thisChat.user, thisChat.userSocket.id);
                         });
                         $userNameItem.append(joinButton);
                         return true;
@@ -453,35 +438,9 @@ var Chat = function () {
 
         }
     }, {
-        key: 'onGameCreated',
-        value: function onGameCreated(data) {
-            var userID = data.userCreatedGame;
-            var joinButton = thisChat.buildJoinButton(userID);
-
-            if ($('#connections .btn-join #' + userID).length == 0) {
-                $('#connections li#' + userID).append(joinButton);
-                joinButton.on('click', function () {
-                    thisChat.onJoinGame(data.gameId);
-                });
-            }
-
-            if (this.id === data.mySocketId) {
-                thisChat.userObj.startGame(data.gameId);
-            }
-        }
-    }, {
-        key: 'buildJoinButton',
+        key: "buildJoinButton",
         value: function buildJoinButton(userID) {
             return $('<button />').addClass('btn-join').addClass('btn-sm').addClass('btn-primary').addClass('pull-right').attr("id", userID).text('Join Game');
-        }
-    }, {
-        key: 'onJoinGame',
-        value: function onJoinGame(gameId) {
-            this.userSocket.emit(events.PLAYER_JOIN_GAME, {
-                gameId: gameId,
-                user: this.user,
-                mySocketId: this.userSocket.id
-            });
         }
     }]);
 
@@ -490,7 +449,7 @@ var Chat = function () {
 
 module.exports = { Chat: Chat };
 
-},{"./constants/events":3}],3:[function(require,module,exports){
+},{"./constants/events":3,"./game":4}],3:[function(require,module,exports){
 'use strict';
 
 var LOBBY = 'lobby';
@@ -515,10 +474,12 @@ var PLAYER_RESTART = 'playerRestart';
 // game events
 var NEW_GAME_CREATED = 'newGameCreated';
 var PLAYER_JOINED_GAME = 'playerJoinedGame';
+var PLAYER_LEAVE_GAME = 'PLAYER_LEAVE_GAME';
 var UPDATE_SCORE = 'UPDATE_SCORE';
 var SUBMIT_BOARD = 'SUBMIT_BOARD';
 var GET_OPPONENT_BOARD = 'GET_OPPONENT_BOARD';
 var ON_NEXT_MOVE = 'ON_NEXT_MOVE';
+var GET_GAME_HOST = 'GET_GAME_HOST';
 
 // lobby
 // const PLAYER_RESTART = 'playerRestart';
@@ -526,15 +487,244 @@ var ON_NEXT_MOVE = 'ON_NEXT_MOVE';
 module.exports = { LOBBY: LOBBY, USER_JOINED: USER_JOINED, MESSAGE_SEND: MESSAGE_SEND, FIND_LEADER: FIND_LEADER,
     CREATE_GAME: CREATE_GAME, GAME_START: GAME_START, COUNTDOWN: COUNTDOWN, NEXT_MOVE: NEXT_MOVE, PLAYER_JOIN_GAME: PLAYER_JOIN_GAME, PLAYER_MOVE: PLAYER_MOVE, PLAYER_RESTART: PLAYER_RESTART,
     NEW_GAME_CREATED: NEW_GAME_CREATED, GET_USERS: GET_USERS, PLAYER_JOINED_GAME: PLAYER_JOINED_GAME, UPDATE_USER_SOCKET: UPDATE_USER_SOCKET, UPDATE_SCORE: UPDATE_SCORE, SUBMIT_BOARD: SUBMIT_BOARD,
-    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE
+    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE, GET_GAME_HOST: GET_GAME_HOST, PLAYER_LEAVE_GAME: PLAYER_LEAVE_GAME
 };
 
 },{}],4:[function(require,module,exports){
 'use strict';
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * Created by dusan_cvetkovic on 12/10/16.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
+
+
+var _events = require('./constants/events');
+
+var events = _interopRequireWildcard(_events);
+
+var _user = require('./user');
+
+var userClass = _interopRequireWildcard(_user);
+
 var _battleship = require('./battleship');
 
-var battleship = _interopRequireWildcard(_battleship);
+var battleshipClass = _interopRequireWildcard(_battleship);
+
+var _chat = require('./chat');
+
+var chatClass = _interopRequireWildcard(_chat);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// let socket;
+var thisGame = void 0;
+
+var Game = function () {
+    function Game(gameID, socketIO, user) {
+        _classCallCheck(this, Game);
+
+        thisGame = this;
+        this.gameID = gameID;
+        // this.moveCount = 0;
+        this.battleship = new battleshipClass.Battleship();
+        this.userSocket = socketIO;
+        this.bindSocketEvents();
+
+        this.hostUser = new userClass.User(user);
+        this.isHostUser = this.hostUser.user.socket_id == socketIO.id;
+
+        $('#submitBoard').click(function () {
+            thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
+        });
+
+        this.$opponentScore = $('#header #opponent');
+        this.$userScore = $('#header #user');
+    }
+
+    _createClass(Game, [{
+        key: 'bindSocketEvents',
+        value: function bindSocketEvents() {
+
+            this.userSocket.on(events.PLAYER_JOINED_GAME, thisGame.onPlayerJoinedGame);
+            this.userSocket.on(events.UPDATE_SCORE, thisGame.onUpdateScore);
+            this.userSocket.on(events.GET_OPPONENT_BOARD, thisGame.onOpponentBoardSubmit);
+            // this.userSocket.on(events.GET_GAME_HOST, thisGame.onGetGameHost);
+        }
+
+        // onGetGameHost(data) {
+        //     this.hostUser = new userClass.User(data);
+        // }
+
+    }, {
+        key: 'getBoardData',
+        value: function getBoardData() {
+            return {
+                board: thisGame.battleship.getBoard,
+                user: thisGame.player.user,
+                game_id: thisGame.gameID
+            };
+        }
+    }, {
+        key: 'startGame',
+        value: function startGame() {
+            $('.page').hide();
+            $('#game').show();
+
+            var $pieces = $('.ship');
+            this.battleship.bindDragEvents($pieces);
+            this.battleship.drawBord("p", 0);
+            this.battleship.drawBord("o", 10);
+            this.battleship.addFireListener(thisGame.onFireEvent);
+
+            // if (gameId != undefined) {
+            //     thisGame.userGameId = gameId;
+            // }
+        }
+    }, {
+        key: 'onFireEvent',
+        value: function onFireEvent(fireEvent) {
+            thisGame.userSocket.emit(events.ON_NEXT_MOVE, {
+                game_id: thisGame.gameID,
+                user: thisGame.player.user,
+                opponent: thisGame.opponentPlayer.user,
+                fire_event: fireEvent
+            });
+        }
+    }, {
+        key: 'onPlayerJoinedGame',
+        value: function onPlayerJoinedGame(data) {
+            if (thisGame.isHostUser) {
+                thisGame.startGame();
+                thisGame.$userScore.html("User: " + data.user.username);
+                // this.isHostUser = true;
+            } else {
+                thisGame.startGame();
+            }
+
+            thisGame.opponentUser = new userClass.User(data.user);
+            console.log("logged to game: ", data);
+            $('#game-area').show();
+            $('#wait-opponent').hide();
+            thisGame.$opponentScore.show();
+            // $('#wait-opponent').removeClass('loader');
+        }
+    }, {
+        key: 'onUpdateScore',
+        value: function onUpdateScore(gameDataResult) {
+            console.log(gameDataResult);
+            var gameData = gameDataResult.game;
+            if (thisGame.isHostUser) {
+                thisGame.displayScore(gameData.player1_username, gameData.player1_score, gameData.player2_username, gameData.player2_score);
+            } else {
+                thisGame.displayScore(gameData.player2_username, gameData.player2_score, gameData.player1_username, gameData.player1_score);
+            }
+
+            thisGame.checkForGameOver(gameDataResult);
+
+            if (thisGame.isHostUser && gameData.player1_turn || !thisGame.isHostUser && !gameData.player1_turn) {
+                $('#opponent_board').removeClass('disabled-button');
+            } else {
+                $('#opponent_board').addClass('disabled-button');
+            }
+        }
+    }, {
+        key: 'checkForGameOver',
+        value: function checkForGameOver(gameDataResult) {
+            console.log("ships left: ", gameDataResult.shipsLeft);
+            switch (gameDataResult.shipsLeft.length) {
+                case 1:
+                    var userShipsLeft = gameDataResult.shipsLeft[0];
+                    if (thisGame.player.user.id == userShipsLeft.player_id) {
+                        var winner = thisGame.getPlayerById(userShipsLeft.player_id);
+                        console.log("You won: ", winner.user);
+                        thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
+                            gameId: thisGame.gameID,
+                            user: winner.user
+                        });
+                    } else {
+                        var loser = thisGame.getOtherPlayerById(userShipsLeft.player_id);
+                        console.log("You lost: ", loser.user);
+                        thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
+                            gameId: thisGame.gameID,
+                            user: loser.user
+                        });
+                    }
+
+                    $('.page').hide();
+                    $('#lobby').show();
+                    thisGame.populateHeader(thisGame.player.user);
+                    this.restartGameState();
+            }
+        }
+    }, {
+        key: 'restartGameState',
+        value: function restartGameState() {
+            thisGame.battleship = new battleshipClass.Battleship();
+
+            $('#game-area').hide();
+            $('#wait-opponent').show();
+        }
+    }, {
+        key: 'getPlayerById',
+        value: function getPlayerById(id) {
+            return thisGame.hostUser.user.id == id ? thisGame.hostUser : thisGame.opponentUser;
+        }
+    }, {
+        key: 'getOtherPlayerById',
+        value: function getOtherPlayerById(id) {
+            return thisGame.hostUser.user.id != id ? thisGame.hostUser : thisGame.opponentUser;
+        }
+    }, {
+        key: 'displayScore',
+        value: function displayScore(userName, userScore, opponentName, opponentScore) {
+            thisGame.$userScore.html("User: " + userName + ": " + userScore);
+            thisGame.$opponentScore.html("Opponent: " + opponentName + ": " + opponentScore);
+        }
+    }, {
+        key: 'onOpponentBoardSubmit',
+        value: function onOpponentBoardSubmit(boardData) {
+            if (boardData.user.id == thisGame.opponentPlayer.user.id) {
+                console.log("setting opp board");
+                thisGame.battleship.setOpponentBoard(boardData.board);
+            }
+        }
+    }, {
+        key: 'onJoinGame',
+        value: function onJoinGame(user, socketID) {
+            this.userSocket.emit(events.PLAYER_JOIN_GAME, {
+                gameId: thisGame.gameID,
+                user: user,
+                mySocketId: socketID
+            });
+        }
+    }, {
+        key: 'populateHeader',
+        value: function populateHeader(user) {
+            $('#header').show();
+            $('#header #user').html("Welcome " + user.username);
+            thisGame.$opponentScore.show();
+        }
+    }, {
+        key: 'opponentPlayer',
+        get: function get() {
+            if (!thisGame.isHostUser) return thisGame.hostUser;else return thisGame.opponentUser;
+        }
+    }, {
+        key: 'player',
+        get: function get() {
+            if (thisGame.isHostUser) return thisGame.hostUser;else return thisGame.opponentUser;
+        }
+    }]);
+
+    return Game;
+}();
+
+module.exports = { Game: Game };
+
+},{"./battleship":1,"./chat":2,"./constants/events":3,"./user":6}],5:[function(require,module,exports){
+'use strict';
 
 var _chat = require('./chat');
 
@@ -551,37 +741,28 @@ var events = _interopRequireWildcard(_events);
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 // console.log(LOBBY)
-/**
- * Created by dusan_cvetkovic on 12/5/16.
- */
+var user = void 0; /**
+                    * Created by dusan_cvetkovic on 12/5/16.
+                    */
 
-var user = void 0;
 var chat = void 0;
-var bs = new battleship.Battleship();
+// const bs = new battleship.Battleship();
 var clientIO = void 0;
 
-function onOpponentBoardSubmit(boardData) {
-    if (boardData.user.id != user.user.id) {
-        bs.setOpponentBoard(boardData.board);
-    }
-}
-function bindSocketEvents() {
-    clientIO.on(events.GET_OPPONENT_BOARD, onOpponentBoardSubmit);
-}
+function bindSocketEvents() {}
 
 $(document).ready(function () {
-
-    function populateHeader(user) {
-        $('#header').show();
-        $('#header #user').html("Welcome " + user.username);
-    }
 
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {}, 'json').done(function (result) {
+            if (!result.success) {
+                console.log("login res ", result);
+                return;
+            }
             clientIO = io();
-            bindSocketEvents();
-            user = new userClass.User(result.user, bs, clientIO);
+            // bindSocketEvents();
+            user = new userClass.User(result.user);
             chat = new chatClass.Chat(user, clientIO);
 
             $('.page').hide();
@@ -597,21 +778,19 @@ $(document).ready(function () {
 
         clientIO.emit(events.CREATE_GAME, { user: user.user });
     });
-
-    $('#submitBoard').click(function () {
-        if (user !== undefined) {
-            clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
-        }
-        // user.submitBoard()
-    });
 });
 
-},{"./battleship":1,"./chat":2,"./constants/events":3,"./user":5}],5:[function(require,module,exports){
-'use strict';
+function populateHeader(user) {
+    $('#header').show();
+    $('#header #user').html("Welcome " + user.username);
+}
+
+},{"./chat":2,"./constants/events":3,"./user":6}],6:[function(require,module,exports){
+"use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _events = require('./constants/events');
+var _events = require("./constants/events");
 
 var events = _interopRequireWildcard(_events);
 
@@ -623,58 +802,24 @@ var thisUser = void 0;
 var socket = void 0;
 
 var User = function () {
-    function User(jsonUser, battleship, socketIO) {
+    function User(jsonUser) {
         _classCallCheck(this, User);
 
         this.user = jsonUser;
-        this.battleship = battleship;
-        socket = socketIO;
+        // this.battleship = battleship;
+        // socket = socketIO;
         thisUser = this;
 
         this.bindSocketEvents();
     }
 
     _createClass(User, [{
-        key: 'bindSocketEvents',
+        key: "bindSocketEvents",
         value: function bindSocketEvents() {
             // this.clientIO.on(events.MESSAGE_SEND, thisChat.onMessageSend);
             // this.clientIO.on(events.GET_USERS, thisChat.onGetUsers);
             // this.clientIO.on(events.CREATE_GAME, thisChat.onGameCreated);
             // this.clientIO.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
-        }
-    }, {
-        key: 'getBoardData',
-        value: function getBoardData() {
-            return {
-                board: thisUser.battleship.getBoard,
-                user: thisUser.user,
-                game_id: thisUser.userGameId
-            };
-        }
-    }, {
-        key: 'startGame',
-        value: function startGame(gameId) {
-            $('.page').hide();
-            $('#game').show();
-
-            var $pieces = $('.ship');
-            this.battleship.bindDragEvents($pieces);
-            this.battleship.drawBord("p", 0);
-            this.battleship.drawBord("o", 10);
-            this.battleship.addFireListener(thisUser.onFireEvent);
-
-            if (gameId != undefined) {
-                thisUser.userGameId = gameId;
-            }
-        }
-    }, {
-        key: 'onFireEvent',
-        value: function onFireEvent(fireEvent) {
-            socket.emit(events.ON_NEXT_MOVE, {
-                game_id: thisUser.userGameId,
-                user: thisUser.user,
-                fire_event: fireEvent
-            });
         }
     }]);
 
@@ -683,4 +828,4 @@ var User = function () {
 
 module.exports = { User: User };
 
-},{"./constants/events":3}]},{},[4]);
+},{"./constants/events":3}]},{},[5]);

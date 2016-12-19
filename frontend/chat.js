@@ -2,6 +2,7 @@
  * Created by dusan_cvetkovic on 11/1/16.
  */
 import * as events from "./constants/events"
+import * as gameClass from "./game"
 
 let thisChat;
 
@@ -12,8 +13,6 @@ class Chat {
         this.userObj = user;
         this.userSocket = socket;
         this.$usersList = $('#connections');
-        this.$opponentScore = $('#header #opponent');
-        this.$userScore = $('#header #user');
 
         this.bindEvents();
         this.bindSocketEvents();
@@ -22,39 +21,29 @@ class Chat {
     }
 
     bindSocketEvents() {
+        this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
         this.userSocket.on(events.MESSAGE_SEND, thisChat.onMessageSend);
         this.userSocket.on(events.GET_USERS, thisChat.onGetUsers);
-        this.userSocket.on(events.CREATE_GAME, thisChat.onGameCreated);
-        this.userSocket.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
         this.userSocket.on(events.UPDATE_USER_SOCKET, thisChat.onUpdateUserSocket);
-        this.userSocket.on(events.UPDATE_SCORE, thisChat.onUpdateScore);
     }
 
-    onUpdateScore(gameData) {
-        console.log(gameData);
-        if (thisChat.user.id == gameData.player1_id) {
-            thisChat.$userScore.html("User: " + gameData.player1_username +
-                ": " + gameData.player1_score);
-            thisChat.$opponentScore.html("Opp: " + gameData.player2_username +
-                ": " + gameData.player2_score);
-        }
-        else {
-            thisChat.$userScore.html("User: " + gameData.player2_username +
-                ": " + gameData.player2_score);
-            thisChat.$opponentScore.html("Opponent: " + gameData.player1_username +
-                ": " + gameData.player1_score);
+    onGameCreated(data) {
+        const gameCreator = data.userCreatedGame;
+        const joinButton = thisChat.buildJoinButton(gameCreator.id);
+
+        const game = new gameClass.Game(data.gameId, thisChat.userSocket,
+            gameCreator, true);
+
+        if ($('#connections .btn-join #' + gameCreator.id).length == 0) {
+            $('#connections li#' + gameCreator.id).append(joinButton);
+            joinButton.on('click', function () {
+                game.onJoinGame(thisChat.user, thisChat.userSocket.id);
+            });
         }
 
-        if ( (thisChat.user.id == gameData.player1_id && gameData.player1_turn) ||
-            (thisChat.user.id == gameData.player2_id && !gameData.player1_turn)
-        ){
-            $('#opponent_board').removeClass('disabled-button');
+        if (this.id === data.mySocketId) {
+            game.startGame();
         }
-        else{
-            $('#opponent_board').addClass('disabled-button');
-        }
-
-        thisChat.$opponentScore.show();
     }
 
     onUpdateUserSocket(data) {
@@ -65,22 +54,6 @@ class Chat {
         }
     }
 
-    onPlayerJoinedGame(data) {
-        if (data.user.id === thisChat.user.id) {
-            thisChat.userObj.startGame(data.gameId);
-            thisChat.$userScore.html("User: " + data.user.username);
-        }
-        else {
-            thisChat.$opponentScore.html("Opponent: " + data.user.username);
-            thisChat.$opponentScore.show();
-        }
-        console.log("logged to game: ", data);
-        $('#game-area').show();
-        $('#wait-opponent').hide();
-        // $('#wait-opponent').removeClass('loader');
-
-
-    }
 
     bindEvents() {
 
@@ -114,9 +87,12 @@ class Chat {
                 .html(user.username);
             data.games.some(function (game) {
                 if (user.socket_id == game.socket_created) {
+                    console.log(game);
                     const joinButton = thisChat.buildJoinButton(user.id);
                     joinButton.on('click', function () {
-                        thisChat.onJoinGame(game.id);
+                        const game = new gameClass.Game(game.id, thisChat.userSocket,
+                            user);
+                        game.onJoinGame(thisChat.user, thisChat.userSocket.id);
                     });
                     $userNameItem.append(joinButton);
                     return true;
@@ -130,21 +106,6 @@ class Chat {
 
     }
 
-    onGameCreated(data) {
-        const userID = data.userCreatedGame;
-        const joinButton = thisChat.buildJoinButton(userID);
-
-        if ($('#connections .btn-join #' + userID).length == 0) {
-            $('#connections li#' + userID).append(joinButton);
-            joinButton.on('click', function () {
-                thisChat.onJoinGame(data.gameId);
-            });
-        }
-
-        if (this.id === data.mySocketId) {
-            thisChat.userObj.startGame(data.gameId);
-        }
-    }
 
     buildJoinButton(userID) {
         return $('<button />')
@@ -154,14 +115,6 @@ class Chat {
             .addClass('pull-right')
             .attr("id", userID)
             .text('Join Game');
-    }
-
-    onJoinGame(gameId) {
-        this.userSocket.emit(events.PLAYER_JOIN_GAME, {
-            gameId: gameId,
-            user: this.user,
-            mySocketId: this.userSocket.id
-        });
     }
 
 

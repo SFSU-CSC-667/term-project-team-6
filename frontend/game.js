@@ -1,14 +1,216 @@
 /**
  * Created by dusan_cvetkovic on 12/10/16.
  */
+import * as events from "./constants/events"
+import * as userClass from './user'
+import * as battleshipClass from './battleship'
+import * as chatClass from './chat'
+
+// let socket;
+let thisGame;
 
 class Game {
-    constructor(id, ) {
-        this.gameID = id;
-        this.moveCount = 0;
+    constructor(gameID, socketIO, user) {
+        thisGame = this;
+        this.gameID = gameID;
+        // this.moveCount = 0;
+        this.battleship = new battleshipClass.Battleship();
+        this.userSocket = socketIO;
+        this.bindSocketEvents();
+
+        this.hostUser = new userClass.User(user);
+        this.isHostUser = this.hostUser.user.socket_id == socketIO.id;
+
+
+        $('#submitBoard').click(function () {
+            thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
+        });
+
+        this.$opponentScore = $('#header #opponent');
+        this.$userScore = $('#header #user');
     }
 
+    get opponentPlayer() {
+        if (!thisGame.isHostUser)
+            return thisGame.hostUser;
+        else
+            return thisGame.opponentUser;
+    }
+
+    get player() {
+        if (thisGame.isHostUser)
+            return thisGame.hostUser;
+        else
+            return thisGame.opponentUser;
+    }
+
+    bindSocketEvents() {
+
+        this.userSocket.on(events.PLAYER_JOINED_GAME, thisGame.onPlayerJoinedGame);
+        this.userSocket.on(events.UPDATE_SCORE, thisGame.onUpdateScore);
+        this.userSocket.on(events.GET_OPPONENT_BOARD, thisGame.onOpponentBoardSubmit);
+        // this.userSocket.on(events.GET_GAME_HOST, thisGame.onGetGameHost);
+    }
+
+    // onGetGameHost(data) {
+    //     this.hostUser = new userClass.User(data);
+    // }
+
+    getBoardData() {
+        return {
+            board: thisGame.battleship.getBoard,
+            user: thisGame.player.user,
+            game_id: thisGame.gameID
+        };
+    }
+
+    startGame() {
+        $('.page').hide();
+        $('#game').show();
+
+        const $pieces = $('.ship');
+        this.battleship.bindDragEvents($pieces);
+        this.battleship.drawBord("p", 0);
+        this.battleship.drawBord("o", 10);
+        this.battleship.addFireListener(thisGame.onFireEvent);
+
+        // if (gameId != undefined) {
+        //     thisGame.userGameId = gameId;
+        // }
+    }
+
+    onFireEvent(fireEvent) {
+        thisGame.userSocket.emit(events.ON_NEXT_MOVE, {
+            game_id: thisGame.gameID,
+            user: thisGame.player.user,
+            opponent: thisGame.opponentPlayer.user,
+            fire_event: fireEvent
+        });
+    }
+
+    onPlayerJoinedGame(data) {
+        if (thisGame.isHostUser) {
+            thisGame.startGame();
+            thisGame.$userScore.html("User: " + data.user.username);
+            // this.isHostUser = true;
+        }
+        else {
+            thisGame.startGame();
+        }
+
+        thisGame.opponentUser = new userClass.User(data.user);
+        console.log("logged to game: ", data);
+        $('#game-area').show();
+        $('#wait-opponent').hide();
+        thisGame.$opponentScore.show();
+        // $('#wait-opponent').removeClass('loader');
+    }
+
+    onUpdateScore(gameDataResult) {
+        console.log(gameDataResult);
+        const gameData = gameDataResult.game;
+        if (thisGame.isHostUser) {
+            thisGame.displayScore(gameData.player1_username,
+                gameData.player1_score,
+                gameData.player2_username,
+                gameData.player2_score
+            );
+        }
+        else {
+            thisGame.displayScore(gameData.player2_username,
+                gameData.player2_score,
+                gameData.player1_username,
+                gameData.player1_score
+            );
+        }
+
+        thisGame.checkForGameOver(gameDataResult);
+
+        if ((thisGame.isHostUser && gameData.player1_turn) ||
+            (!thisGame.isHostUser && !gameData.player1_turn)) {
+            $('#opponent_board').removeClass('disabled-button');
+        }
+        else {
+            $('#opponent_board').addClass('disabled-button');
+        }
+
+
+    }
+
+    checkForGameOver(gameDataResult) {
+        console.log("ships left: ", gameDataResult.shipsLeft);
+        switch (gameDataResult.shipsLeft.length) {
+            case 1:
+                const userShipsLeft = gameDataResult.shipsLeft[0];
+                if (thisGame.player.user.id == userShipsLeft.player_id) {
+                    const winner = thisGame.getPlayerById(userShipsLeft.player_id);
+                    console.log("You won: ", winner.user);
+                    thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
+                        gameId: thisGame.gameID,
+                        user: winner.user
+                    });
+
+                }
+                else {
+                    const loser = thisGame.getOtherPlayerById(userShipsLeft.player_id)
+                    console.log("You lost: ", loser.user);
+                    thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
+                        gameId: thisGame.gameID,
+                        user: loser.user
+                    });
+                }
+
+                $('.page').hide();
+                $('#lobby').show();
+                thisGame.populateHeader(thisGame.player.user);
+                this.restartGameState();
+        }
+    }
+
+    restartGameState() {
+        thisGame.battleship = new battleshipClass.Battleship();
+
+        $('#game-area').hide();
+        $('#wait-opponent').show();
+    }
+
+    getPlayerById(id) {
+        return thisGame.hostUser.user.id == id ? thisGame.hostUser : thisGame.opponentUser;
+    }
+
+    getOtherPlayerById(id) {
+        return thisGame.hostUser.user.id != id ? thisGame.hostUser : thisGame.opponentUser;
+    }
+
+    displayScore(userName, userScore, opponentName, opponentScore) {
+        thisGame.$userScore.html("User: " + userName +
+            ": " + userScore);
+        thisGame.$opponentScore.html("Opponent: " + opponentName +
+            ": " + opponentScore);
+    }
+
+    onOpponentBoardSubmit(boardData) {
+        if (boardData.user.id == thisGame.opponentPlayer.user.id) {
+            console.log("setting opp board");
+            thisGame.battleship.setOpponentBoard(boardData.board);
+        }
+    }
+
+    onJoinGame(user, socketID) {
+        this.userSocket.emit(events.PLAYER_JOIN_GAME, {
+            gameId: thisGame.gameID,
+            user: user,
+            mySocketId: socketID
+        });
+    }
+
+    populateHeader(user) {
+        $('#header').show();
+        $('#header #user').html("Welcome " + user.username);
+        thisGame.$opponentScore.show();
+    }
 
 }
+
 
 module.exports = {Game};

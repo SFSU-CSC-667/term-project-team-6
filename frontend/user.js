@@ -5,10 +5,10 @@ let socket;
 
 class User {
 
-    constructor(jsonUser, battleship, socketIO) {
+    constructor(jsonUser) {
         this.user = jsonUser;
-        this.battleship = battleship;
-        socket = socketIO;
+        // this.battleship = battleship;
+        // socket = socketIO;
         thisUser = this;
 
         this.bindSocketEvents()
@@ -20,38 +20,6 @@ class User {
         // this.clientIO.on(events.CREATE_GAME, thisChat.onGameCreated);
         // this.clientIO.on(events.PLAYER_JOINED_GAME, thisChat.onPlayerJoinedGame);
     }
-
-    getBoardData() {
-        return {
-            board: thisUser.battleship.getBoard,
-            user: thisUser.user,
-            game_id: thisUser.userGameId
-        };
-    }
-
-    startGame(gameId) {
-        $('.page').hide();
-        $('#game').show();
-
-        const $pieces = $('.ship');
-        this.battleship.bindDragEvents($pieces);
-        this.battleship.drawBord("p", 0);
-        this.battleship.drawBord("o", 10);
-        this.battleship.addFireListener(thisUser.onFireEvent);
-
-        if (gameId != undefined) {
-            thisUser.userGameId = gameId;
-        }
-    }
-
-    onFireEvent(fireEvent) {
-        socket.emit(events.ON_NEXT_MOVE, {
-            game_id: thisUser.userGameId,
-            user: thisUser.user,
-            fire_event:fireEvent
-        });
-    }
-
 }
 
 module.exports = {User};

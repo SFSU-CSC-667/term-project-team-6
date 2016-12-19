@@ -27,8 +27,8 @@ block body
                         a( href="#register-form" data-toggle="tab") Register
 
                 div(id="myTabContent" class="tab-content")
-                    div( class="tab-pane active in" id="login-form")
-                        form( action="/login", method="POST")
+                    div( class="tab-pane active in")
+                        form( action="/login", method="POST" id="login-form")
                             h2(class="login-title") Login to battleship
                             hr
                             input(id="username", name="username", type="text", class="login-input", placeholder="username")
@@ -48,7 +48,7 @@ block body
                             input(type="submit", value="Submit", name="submit", class="login-button")
 
     div#lobby( hidden=true, class="page")
-        div(class="container full-height")
+        div(class="container-fluid full-height")
             div(class="row full-height")
                 div(class="col-md-2")
                    ul( class="nav nav-pills nav-stacked" style="margin-top:25px;")
