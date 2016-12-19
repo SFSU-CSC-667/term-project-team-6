@@ -37,7 +37,7 @@ $(document).ready(() => {
 
         $('.page').hide();
         $('#lobby').show();
-        populateHeader(user.user);
+        //populateHeader(user.user);
     }
 
     $('input#login-submit').click(function (event) {
@@ -72,9 +72,15 @@ $(document).ready(() => {
     });
 
     $('#submitBoard').click(function () {
-        if (user !== undefined) {
-            clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
-
+        if( $('#pieces')[0].childNodes.length > 0) {
+            alert( "You have to place all your pieces!");
+        } else {
+            if (user !== undefined) {
+                const $ships = $('.ship');
+                $ships.unbind();
+                $('#submitBoard').hide();
+                clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
+            }
         }
         // user.submitBoard()
     })

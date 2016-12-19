@@ -122,13 +122,13 @@ var Battleship = function () {
             switch (this.opponentBoard[row][column]) {
                 case 0:
                     //miss
-                    square.style.background = '#bbb';
+                    square.style.backgroundImage = 'url("../assets/miss.png")';
                     this.opponentBoard[row][column] = 2;
                     fireEvent.hit = false;
                     break;
                 case 1:
                     //hit
-                    square.style.background = 'red';
+                    square.style.backgroundImage = 'url("../assets/hit.png")';
                     this.opponentBoard[row][column] = 3;
                     fireEvent.hit = true;
                     break;
@@ -259,14 +259,14 @@ var Battleship = function () {
     }, {
         key: "flipShip",
         value: function flipShip(event) {
-            console.log(event);
+            //console.log( event);
             var parent_id = event.target.parentNode.id;
             var width = event.target.width;
             var height = event.target.height;
             var ship_height = parseInt(height) / thisBattleship.square_size;
             var ship_width = parseInt(width) / thisBattleship.square_size;
 
-            console.log({ width: width, height: height, ship_width: ship_width, ship_height: ship_height });
+            //console.log( {width,height,ship_width,ship_height});
 
             if (parent_id == "pieces") {
                 event.target.style.height = width + "px";
@@ -640,8 +640,14 @@ $(document).ready(function () {
     });
 
     $('#submitBoard').click(function () {
-        if (user !== undefined) {
-            clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
+        if ($('#pieces')[0].childNodes.length > 0) {
+            alert("You have to place all your pieces!");
+        } else {
+            if (user !== undefined) {
+                var $ships = $('.ship');
+                $ships.unbind();
+                clientIO.emit(events.SUBMIT_BOARD, user.getBoardData());
+            }
         }
         // user.submitBoard()
     });

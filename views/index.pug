@@ -12,11 +12,14 @@ block head
 
 block body
     div#header( class="header page-header row", hidden=true)
-        h2
-            div#user(class="pull-left col-lg-6 text-primary")
-        h2
-            div#opponent(class="pull-right col-lg-6 text-danger", hidden=true)
-        a( href=".") Logout
+        div( class="col-md-1")
+        div( class="col-md-9")
+            h2
+                div#user(class="pull-left col-lg-6 text-primary")
+            h2
+                div#opponent(class="pull-right col-lg-6 text-danger", hidden=true)
+        div( class="col-md-2" style="position: relative;")
+            a( class="btn-info" id="logout-button" href=".") Logout
 
     div#login-page( hidden=false, class="page login-page")
         div( class="col-md-4 full-height")
@@ -71,7 +74,7 @@ block body
             include navbar.pug
         div( class="col-md-7")
             div#game-area(hidden=true)
-                button( class="btn-submit" id="submitBoard") Submit Board
+                button( class="btn-success" id="submitBoard") Submit Board
                 div(id='boards')
                     div(id='player_board')
                     div(id='opponent_board')

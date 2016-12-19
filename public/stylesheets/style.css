@@ -75,3 +75,13 @@ a {
 .page-header {
     margin-top: 0!important;
 }
+
+#logout-button {
+    position: absolute;
+    top: 50%;
+    /*margin-top: -xpx;*/
+    padding: 5px;
+    font-size: 18px;
+    border-radius: 4px;
+    margin-top: 12px;
+}

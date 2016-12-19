@@ -102,12 +102,12 @@ class Battleship {
 
         switch (this.opponentBoard[row][column]) {
             case 0: //miss
-                square.style.background = '#bbb';
+                square.style.backgroundImage = 'url("../assets/miss.png")';
                 this.opponentBoard[row][column] = 2;
                 fireEvent.hit = false;
                 break;
             case 1: //hit
-                square.style.background = 'red';
+                square.style.backgroundImage = 'url("../assets/hit.png")';
                 this.opponentBoard[row][column] = 3;
                 fireEvent.hit = true;
                 break;
@@ -228,14 +228,14 @@ class Battleship {
     };
 
     flipShip(event) {
-        console.log( event);
+        //console.log( event);
         const parent_id = event.target.parentNode.id;
         const width = event.target.width;
         const height = event.target.height;
         const ship_height = parseInt( height) / thisBattleship.square_size;
         const ship_width = parseInt( width) / thisBattleship.square_size;
 
-        console.log( {width,height,ship_width,ship_height});
+        //console.log( {width,height,ship_width,ship_height});
 
         if (parent_id == "pieces") {
             event.target.style.height = width + "px";
