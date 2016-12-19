@@ -83,6 +83,10 @@ input {
   outline: 0;
 }
 
+#login-error, #register-error {
+    color: red;
+}
+
 :-moz-placeholder {
   color: #aaa;
   font-weight: 300;

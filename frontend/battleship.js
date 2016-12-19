@@ -147,7 +147,7 @@ class Battleship {
 
         console.log( {ship,leftOffset,previous_pos_id,ship_height,ship_width,square,row,column});
 
-        if (column >= 0 && this.canPlace(row, ship_height, column, ship_width)) {
+        if (column >= 0 && this.canPlace(row, ship_height, column, ship_width, false)) {
             if (previous_pos_id != "pieces")
                 this.removeShip(previous_pos_id, ship_height, ship_width);
             this.placeShip(square.id, leftOffset, ship_height, ship_width);
@@ -245,7 +245,7 @@ class Battleship {
             } else {
                 event.target.src = "../assets/"+event.target.id+".png";
             }
-        } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width)) {
+        } else if (thisBattleship.canPlace(parent_id.substring(1, 2), ship_height, parent_id.substring(2, 3), ship_width, true)) {
             event.target.style.width = height + "px";
             event.target.style.height = width + "px";
 
@@ -263,15 +263,26 @@ class Battleship {
         }
     };
 
-    canPlace(row, ship_height, column, ship_width) {
+    canPlace(row, ship_height, column, ship_width, rotated) {
+        let skip_first = rotated;
         if( (row + ship_height <= this.rows) && (column + ship_width <= this.columns)) {
             let i = 0;
             for( i = row; i < row + ship_height; i++) {
-                if( this.playerBoard[ i][ column] == 1) return false;
+                if( skip_first) {
+                    skip_first = false;
+                } else {
+                    if (this.playerBoard[i][column] == 1) return false;
+                }
             }
 
+            skip_first = rotated;
+
             for( i = column; i < column + ship_width; i++) {
-                if( this.playerBoard[ row][ i] == 1) return false;
+                if (skip_first) {
+                    skip_first = false;
+                } else {
+                    if (this.playerBoard[row][i] == 1) return false;
+                }
             }
         } else {
             return false;

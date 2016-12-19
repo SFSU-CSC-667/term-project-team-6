@@ -40,6 +40,11 @@ $(document).ready(() => {
         //populateHeader(user.user);
     }
 
+    $('.login-tab').click( function (event) {
+        $('#register-error').hide();
+        $('#login-error').hide();
+    });
+
     $('input#login-submit').click(function (event) {
         event.preventDefault();
         $.post('/login', $('form#login-form').serialize(), function () {
@@ -48,8 +53,9 @@ $(document).ready(() => {
                 login( result);
             })
             .fail(function (error) {
-                //TODO update UI
-                console.log("error", error)
+                $('#login-error').text( "Error logging in");
+                $('#login-error').show();
+                console.log("error", error);
             })
         ;
     });
@@ -62,7 +68,9 @@ $(document).ready(() => {
                 login( result);
             })
             .fail( function (error) {
-                //TODO update UI
+                $('#register-error').text( "Error registering");
+                $('#register-error').show();
+                console.log("error", error);
             });
     });
 
