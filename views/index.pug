@@ -80,12 +80,15 @@ block body
         div( class="col-md-8")
             div#game-area(hidden=true)
                 button( class="btn-success" id="submitBoard") Submit Board
+                button( class="btn-danger pull-right" id="leaveGame") Leave Game
                 div(id='boards')
                     div(id='player_board')
                     div(id='opponent_board')
                 div(id='pieces')
                     each val in ["carrier", "battleship", "destroyer", "submarine", "patrol"]
                         img( class="ship" id=val src="assets/"+val+".png")
+                div#wait-opponent-placing(hidden=true) Waiting for opponent to place his ships...
+                    div(class="loader")
             // TODO make into modal
             div#wait-opponent Waiting for opponent...
                 div(class="loader")

@@ -563,6 +563,7 @@ var PLAYER_RESTART = 'playerRestart';
 var NEW_GAME_CREATED = 'newGameCreated';
 var PLAYER_JOINED_GAME = 'playerJoinedGame';
 var PLAYER_LEAVE_GAME = 'PLAYER_LEAVE_GAME';
+var PLAYER_FORFEIT_GAME = 'PLAYER_FORFEIT_GAME';
 var UPDATE_SCORE = 'UPDATE_SCORE';
 var SUBMIT_BOARD = 'SUBMIT_BOARD';
 var GET_OPPONENT_BOARD = 'GET_OPPONENT_BOARD';
@@ -577,7 +578,9 @@ module.exports = {
     LOBBY: LOBBY, USER_JOINED: USER_JOINED, MESSAGE_SEND: MESSAGE_SEND, FIND_LEADER: FIND_LEADER,
     CREATE_GAME: CREATE_GAME, GAME_START: GAME_START, COUNTDOWN: COUNTDOWN, NEXT_MOVE: NEXT_MOVE, PLAYER_JOIN_GAME: PLAYER_JOIN_GAME, PLAYER_MOVE: PLAYER_MOVE, PLAYER_RESTART: PLAYER_RESTART,
     NEW_GAME_CREATED: NEW_GAME_CREATED, GET_USERS: GET_USERS, PLAYER_JOINED_GAME: PLAYER_JOINED_GAME, UPDATE_USER_SOCKET: UPDATE_USER_SOCKET, UPDATE_SCORE: UPDATE_SCORE, SUBMIT_BOARD: SUBMIT_BOARD,
-    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE, GET_GAME_HOST: GET_GAME_HOST, PLAYER_LEAVE_GAME: PLAYER_LEAVE_GAME, GAME_MESSAGE_SEND: GAME_MESSAGE_SEND, GET_HIGH_SCORES: GET_HIGH_SCORES
+    GET_OPPONENT_BOARD: GET_OPPONENT_BOARD, ON_NEXT_MOVE: ON_NEXT_MOVE, GET_GAME_HOST: GET_GAME_HOST, PLAYER_LEAVE_GAME: PLAYER_LEAVE_GAME, GAME_MESSAGE_SEND: GAME_MESSAGE_SEND,
+    GET_HIGH_SCORES: GET_HIGH_SCORES, PLAYER_FORFEIT_GAME: PLAYER_FORFEIT_GAME
+
 };
 
 },{}],4:[function(require,module,exports){
@@ -617,7 +620,7 @@ var Game = function () {
 
         thisGame = this;
         this.gameID = gameID;
-        // this.moveCount = 0;
+        this.gameIsOn = false;
         this.battleship = new battleshipClass.Battleship();
         this.userSocket = socketIO;
         this.bindSocketEvents();
@@ -626,9 +629,11 @@ var Game = function () {
         this.isHostUser = this.hostUser.user.socket_id == socketIO.id;
 
         $('#submitBoard').on("click", this.onSubmitBoard);
+        $('#leaveGame').on("click", this.onLeaveGame);
 
         this.$opponentScore = $('#header #opponent');
         this.$userScore = $('#header #user');
+        this.$opponentPlacingDialog = $('#wait-opponent-placing');
     }
 
     _createClass(Game, [{
@@ -641,6 +646,7 @@ var Game = function () {
                 $ships.unbind();
                 $('#submitBoard').hide();
                 thisGame.userSocket.emit(events.SUBMIT_BOARD, thisGame.getBoardData());
+                thisGame.$opponentPlacingDialog.show();
             }
         }
     }, {
@@ -651,6 +657,7 @@ var Game = function () {
             this.userSocket.on(events.UPDATE_SCORE, thisGame.onUpdateScore);
             this.userSocket.on(events.GET_OPPONENT_BOARD, thisGame.onOpponentBoardSubmit);
             this.userSocket.on(events.ON_NEXT_MOVE, thisGame.onOpponentMove);
+            this.userSocket.on(events.PLAYER_FORFEIT_GAME, thisGame.onGameForfeited);
 
             // this.userSocket.on(events.GET_GAME_HOST, thisGame.onGetGameHost);
         }
@@ -680,6 +687,8 @@ var Game = function () {
             this.battleship.drawBord("o", 10);
             this.battleship.addFireListener(thisGame.onFireEvent);
 
+            if (!thisGame.gameIsOn) $('#opponent_board').addClass('disabled-button');else $('#opponent_board').removeClass('disabled-button');
+            this.$opponentPlacingDialog.hide();
             // if (gameId != undefined) {
             //     thisGame.userGameId = gameId;
             // }
@@ -732,7 +741,7 @@ var Game = function () {
 
             thisGame.checkForGameOver(gameDataResult);
 
-            if (thisGame.isHostUser && gameData.player1_turn || !thisGame.isHostUser && !gameData.player1_turn) {
+            if (thisGame.gameIsOn && (thisGame.isHostUser && gameData.player1_turn || !thisGame.isHostUser && !gameData.player1_turn)) {
                 $('#opponent_board').removeClass('disabled-button');
             } else {
                 $('#opponent_board').addClass('disabled-button');
@@ -743,11 +752,16 @@ var Game = function () {
         value: function checkForGameOver(gameDataResult) {
             console.log("ships left: ", gameDataResult.shipsLeft);
             switch (gameDataResult.shipsLeft.length) {
+                case 2:
+                    thisGame.gameIsOn = true;
+                    thisGame.$opponentPlacingDialog.hide();
+                    break;
                 case 1:
                     var userShipsLeft = gameDataResult.shipsLeft[0];
                     if (thisGame.player.user.id == userShipsLeft.player_id) {
                         var winner = thisGame.getPlayerById(userShipsLeft.player_id);
                         console.log("You won: ", winner.user);
+                        alertify.notify("You won: " + winner.user.username, 'success');
                         // var notification = alertify.notify('sample', 'success', 5, function(){
                         //     console.log('You won.'); });
 
@@ -758,6 +772,7 @@ var Game = function () {
                     } else {
                         var loser = thisGame.getOtherPlayerById(userShipsLeft.player_id);
                         console.log("You lost: ", loser.user);
+                        alertify.notify("You lost: " + loser.user.username, 'error');
                         // alertify.notify('sample', 'success', 5, function(){
                         //     console.log('You lost.'); });
                         thisGame.userSocket.emit(events.PLAYER_LEAVE_GAME, {
@@ -771,6 +786,18 @@ var Game = function () {
                     thisGame.populateHeader(thisGame.player.user);
                     thisGame.restartGameState();
             }
+        }
+    }, {
+        key: 'onLeaveGame',
+        value: function onLeaveGame() {
+            var usersList = [{ player_id: thisGame.opponentUser.user.id }];
+            // thisGame.checkForGameOver({shipsLeft:usersList});
+            thisGame.userSocket.emit(events.PLAYER_FORFEIT_GAME, { gameId: thisGame.gameID, shipsLeft: usersList });
+        }
+    }, {
+        key: 'onGameForfeited',
+        value: function onGameForfeited(data) {
+            thisGame.checkForGameOver(data);
         }
     }, {
         key: 'restartGameState',

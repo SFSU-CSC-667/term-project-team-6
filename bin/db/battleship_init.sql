@@ -7,6 +7,12 @@
 
 -- Started on 2016-12-18 06:32:20 PST
 
+
+--DROP SCHEMA public CASCADE;
+--CREATE SCHEMA public;
+-- GRANT ALL ON SCHEMA public TO postgres;
+-- GRANT ALL ON SCHEMA public TO public;
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
@@ -68,7 +74,8 @@ CREATE TABLE game (
     player1_score integer DEFAULT 0 NOT NULL,
     player2_score integer DEFAULT 0 NOT NULL,
     player1_turn boolean DEFAULT true NOT NULL,
-    socket_created character varying(30) NOT NULL
+    socket_created character varying(30) NOT NULL,
+    game_full BOOLEAN DEFAULT false
 );
 
 

@@ -4,6 +4,7 @@ let io;
 const db = require('../bin/db/db').battleshipDB;
 const pgp = require('../bin/db/db').pgp;
 
+const submitBoardCountObject = {};
 
 function sendHighScoreTable() {
     db.any('SELECT * FROM player, high_score WHERE high_score.user_id=player.id ' +
@@ -69,6 +70,10 @@ const init = (app, server) => {
         socket.on(events.PLAYER_LEAVE_GAME, function (data) {
             playerLeaveGame(data, socket);
         });
+
+        socket.on(events.PLAYER_FORFEIT_GAME, function (data) {
+            gameForfeited(data, socket);
+        });
         // socket.on(events.GET_GAME_HOST, function (data) {
         //     getGameHost(data, socket);
         // });
@@ -114,7 +119,7 @@ function updateUsers() {
 
     db.tx(function (t) {
         const q1 = this.any('select * from player where is_logged_in=$1', [true]);
-        const q2 = this.any('SELECT * FROM player, game WHERE player1_id=player.id');
+        const q2 = this.any('SELECT * FROM player, game WHERE player1_id=player.id and game_full=false');
 
         // returning a promise that determines a successful transaction:
         return this.batch([q1, q2]); // all of the queries are to be resolved;
@@ -254,6 +259,22 @@ function updateScore(gameID) {
             console.log("update score error: ", error);
         })
 }
+
+function gameForfeited(data, socket) {
+
+    db.one('select * from game where id = $1', [data.gameId])
+        .then(function (game) {
+            console.log("game forfeited", game);
+            updateHighScoreTable(data.shipsLeft, game);
+            io.sockets.in(data.gameId.toString()).emit(events.PLAYER_FORFEIT_GAME,
+                {shipsLeft: data.shipsLeft});
+        })
+        .catch(function (error) {
+            console.log("game forfeited error", error);
+        })
+
+}
+
 function playerJoinGame(data, socket) {
     console.log('Player ' + data.user.username + 'attempting to join game: ' + data.gameId);
     const room = socket.adapter.rooms[data.gameId.toString()];
@@ -263,11 +284,12 @@ function playerJoinGame(data, socket) {
         // Join the room
         socket.join(data.gameId.toString());
 
-        db.one('update game set player2_id=$1 where id=$2 returning *',
+        db.one('update game set player2_id=$1, game_full=TRUE where id=$2 returning *',
             [data.user.id, data.gameId])
             .then(function (row) {
                 console.log("game updated: ", row.id);
                 updateScore(data.gameId);
+                updateUsers();
             })
             .catch(function (err) {
                 console.log(err);
@@ -361,6 +383,10 @@ function onSubmitBoard(boardData, socket) {
                             io.sockets.in(boardData.game_id.toString()).emit(
                                 events.GET_OPPONENT_BOARD, boardData);
                             console.log("inserted all ships successfully!!!");
+
+                            if (submitBoardCountObject[boardData.game_id.toString()])
+                                updateScore(boardData.game_id);
+                            submitBoardCountObject[boardData.game_id.toString()] = true;
                         }
                     })
                     .catch(error => {
