@@ -29,6 +29,7 @@ class Game {
         this.$opponentScore = $('#header #opponent');
         this.$userScore = $('#header #user');
         this.$opponentPlacingDialog = $('#wait-opponent-placing');
+        $('#submitBoard').show();
     }
 
     onSubmitBoard() {
@@ -212,6 +213,7 @@ class Game {
         // thisGame.checkForGameOver({shipsLeft:usersList});
         thisGame.userSocket.emit(events.PLAYER_FORFEIT_GAME,
             {gameId: thisGame.gameID, shipsLeft:usersList});
+        $('#submitBoard').show();
     }
 
     onGameForfeited(data){
