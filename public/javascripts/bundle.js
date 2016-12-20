@@ -631,6 +631,7 @@ var Game = function () {
         this.gameID = gameID;
         this.gameIsOn = false;
         this.battleship = new battleshipClass.Battleship();
+        thisGame.battleship.initPieces();
         this.userSocket = socketIO;
         this.bindSocketEvents();
 

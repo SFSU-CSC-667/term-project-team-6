@@ -8,8 +8,8 @@
 -- Started on 2016-12-18 06:32:20 PST
 
 
---DROP SCHEMA public CASCADE;
---CREATE SCHEMA public;
+-- DROP SCHEMA public CASCADE;
+-- CREATE SCHEMA public;
 -- GRANT ALL ON SCHEMA public TO postgres;
 -- GRANT ALL ON SCHEMA public TO public;
 

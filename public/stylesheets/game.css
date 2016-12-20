@@ -23,6 +23,7 @@
 
 .ship {
     height: 40px;
+    padding: 5px;
     /*margin-top: 2px;*/
     /*margin-bottom: 2px;*/
     /*border: 2px solid black;*/
