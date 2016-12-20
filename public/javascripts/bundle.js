@@ -644,6 +644,7 @@ var Game = function () {
         this.$opponentScore = $('#header #opponent');
         this.$userScore = $('#header #user');
         this.$opponentPlacingDialog = $('#wait-opponent-placing');
+        $('#submitBoard').show();
     }
 
     _createClass(Game, [{
@@ -805,6 +806,7 @@ var Game = function () {
             var usersList = [{ player_id: thisGame.opponentUser.user.id }];
             // thisGame.checkForGameOver({shipsLeft:usersList});
             thisGame.userSocket.emit(events.PLAYER_FORFEIT_GAME, { gameId: thisGame.gameID, shipsLeft: usersList });
+            $('#submitBoard').show();
         }
     }, {
         key: 'onGameForfeited',
@@ -823,6 +825,7 @@ var Game = function () {
             $('#player_board').html("");
             $('#opponent_board').html("");
             thisGame.$opponentScore.hide();
+            $('#submitBoard').show();
         }
     }, {
         key: 'getPlayerById',
