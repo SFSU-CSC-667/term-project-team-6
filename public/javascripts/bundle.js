@@ -348,9 +348,9 @@ var Battleship = function () {
         key: "bindDragEvents",
         value: function bindDragEvents($pieces) {
             $pieces.attr("draggable", "true");
-            $pieces.on("click", this.flipShip);
-            $pieces.on("dragend", this.dragStop);
-            $pieces.on("dragstart", this.dragStart);
+            $pieces.on("click", thisBattleship.flipShip);
+            $pieces.on("dragend", thisBattleship.dragStop);
+            $pieces.on("dragstart", thisBattleship.dragStart);
         }
     }, {
         key: "setOpponentBoard",
@@ -362,6 +362,15 @@ var Battleship = function () {
                 });
             }
             console.log("opponent board set!!");
+        }
+    }, {
+        key: "initPieces",
+        value: function initPieces() {
+            $('#pieces').html(""); // clear pieces
+            var pieces = ["carrier", "battleship", "destroyer", "submarine", "patrol"];
+            pieces.forEach(function (val) {
+                $('#pieces').append("<img class='ship' id=" + val + " src='assets/" + val + ".png'>");
+            });
         }
     }, {
         key: "getBoard",
@@ -687,6 +696,8 @@ var Game = function () {
             this.battleship.drawBord("o", 10);
             this.battleship.addFireListener(thisGame.onFireEvent);
 
+            this.battleship.drawBord();
+
             if (!thisGame.gameIsOn) $('#opponent_board').addClass('disabled-button');else $('#opponent_board').removeClass('disabled-button');
             this.$opponentPlacingDialog.hide();
             // if (gameId != undefined) {
@@ -803,6 +814,7 @@ var Game = function () {
         key: 'restartGameState',
         value: function restartGameState() {
             thisGame.battleship = new battleshipClass.Battleship();
+            thisGame.battleship.initPieces();
 
             $('#game-area').hide();
             $('#wait-opponent').show();

@@ -311,9 +311,9 @@ class Battleship {
 
     bindDragEvents($pieces) {
         $pieces.attr("draggable", "true");
-        $pieces.on("click", this.flipShip);
-        $pieces.on("dragend", this.dragStop);
-        $pieces.on("dragstart", this.dragStart);
+        $pieces.on("click", thisBattleship.flipShip);
+        $pieces.on("dragend", thisBattleship.dragStop);
+        $pieces.on("dragstart", thisBattleship.dragStart);
     }
 
     setOpponentBoard(boardShipPositions) {
@@ -324,6 +324,14 @@ class Battleship {
             })
         }
         console.log("opponent board set!!");
+    }
+
+    initPieces() {
+        $('#pieces').html(""); // clear pieces
+        const pieces = ["carrier", "battleship", "destroyer", "submarine", "patrol"];
+        pieces.forEach( function( val) {
+            $('#pieces').append("<img class='ship' id="+val+" src='assets/"+val+".png'>");
+        });
     }
 }
 

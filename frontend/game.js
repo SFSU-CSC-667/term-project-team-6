@@ -89,6 +89,8 @@ class Game {
         this.battleship.drawBord("o", 10);
         this.battleship.addFireListener(thisGame.onFireEvent);
 
+        this.battleship.drawBord();
+
         if (!thisGame.gameIsOn)
             $('#opponent_board').addClass('disabled-button');
         else
@@ -217,6 +219,7 @@ class Game {
 
     restartGameState() {
         thisGame.battleship = new battleshipClass.Battleship();
+        thisGame.battleship.initPieces();
 
         $('#game-area').hide();
         $('#wait-opponent').show();
@@ -261,7 +264,6 @@ class Game {
         $('#header #user').html("Welcome " + user.username);
         thisGame.$opponentScore.show();
     }
-
 
 }
 
