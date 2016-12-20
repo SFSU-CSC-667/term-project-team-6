@@ -228,6 +228,8 @@ class Game {
         $('#player_board').html("");
         $('#opponent_board').html("");
         thisGame.$opponentScore.hide();
+        $('#submitBoard').show();
+
     }
 
     getPlayerById(id) {
